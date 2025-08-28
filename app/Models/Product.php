@@ -14,6 +14,7 @@ class Product extends Model
         'description',
         'category_id',
         'brand_id',
+        'unit_id',
         'is_active',
         'meta_title',
         'meta_description',
@@ -38,6 +39,14 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    /**
+     * Unit ilişkisi
+     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 
     /**
@@ -88,6 +97,43 @@ class Product extends Model
     {
         $coverImage = $this->coverImage();
         return $coverImage ? $coverImage->getResizedUrl($size) : null;
+    }
+
+    /**
+     * Toplam stok miktarını al
+     */
+    public function getTotalStockAttribute()
+    {
+        return $this->variants->sum('stock_quantity') ?? 0;
+    }
+
+    /**
+     * Stok miktarını birim ile format la
+     */
+    public function formatStockWithUnit($quantity): string
+    {
+        if (!$this->unit) {
+            return number_format($quantity, 3);
+        }
+        
+        // Remove unnecessary decimal places
+        $formatted = rtrim(rtrim(number_format($quantity, 3), '0'), '.');
+        
+        return $formatted . ' ' . $this->unit->symbol;
+    }
+
+    /**
+     * Fiyatı birim ile formatla
+     */
+    public function formatPriceWithUnit($price): string
+    {
+        $formattedPrice = number_format($price, 2) . ' ₺';
+        
+        if ($this->unit && $this->unit->symbol !== 'adet') {
+            $formattedPrice .= '/' . $this->unit->symbol;
+        }
+        
+        return $formattedPrice;
     }
 
     /**

@@ -26,7 +26,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['variants', 'images']);
+        $query = Product::with(['variants', 'images', 'brand', 'category']);
         
         // Arama
         if ($request->filled('search')) {
