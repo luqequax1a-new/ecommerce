@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 // Frontend rotaları
 Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/p/{slug}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/kategori/{slug}', [ProductController::class, 'category'])->name('category.show');
 
 // Admin rotaları
 Route::prefix('admin')->name('admin.')->group(function () {

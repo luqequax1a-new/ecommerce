@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            // Brand and Category relationships
-            $table->foreignId('brand_id')->nullable()->constrained()->onDelete('set null');
-            $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
+            // Add foreign key constraints to existing columns
+            $table->foreign('brand_id')->references('id')->on('brands')->onDelete('set null');
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
             
             // SEO fields for shared hosting optimization
             $table->string('meta_title')->nullable();
@@ -54,10 +54,8 @@ return new class extends Migration
             $table->dropForeign(['brand_id']);
             $table->dropForeign(['category_id']);
             
-            // Drop columns
+            // Drop columns (but keep brand_id and category_id as they were in original)
             $table->dropColumn([
-                'brand_id',
-                'category_id',
                 'meta_title',
                 'meta_description',
                 'meta_keywords',
