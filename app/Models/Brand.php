@@ -6,13 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Traits\HasSEO;
 
 class Brand extends Model
 {
+    use HasSEO;
+    
     protected $fillable = [
         'name',
         'slug',
         'description',
+        'short_description',
         'logo_path',
         'website_url',
         'email',
@@ -20,35 +24,28 @@ class Brand extends Model
         'meta_title',
         'meta_description',
         'meta_keywords',
+        'canonical_url',
+        'robots',
+        'schema_markup',
+        'auto_update_slug',
         'is_active',
         'sort_order'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'sort_order' => 'integer'
+        'auto_update_slug' => 'boolean',
+        'sort_order' => 'integer',
+        'schema_markup' => 'array'
     ];
 
     /**
-     * Boot model - Auto generate slug
+     * Override SEO trait methods for brand-specific behavior
      */
-    protected static function boot()
+    public function getSEOEntityType(): string
     {
-        parent::boot();
-        
-        static::creating(function ($brand) {
-            if (!$brand->slug) {
-                $brand->slug = Str::slug($brand->name);
-            }
-        });
-        
-        static::updating(function ($brand) {
-            if ($brand->isDirty('name') && !$brand->isDirty('slug')) {
-                $brand->slug = Str::slug($brand->name);
-            }
-        });
+        return 'brand';
     }
-
     /**
      * Products ilişkisi
      */

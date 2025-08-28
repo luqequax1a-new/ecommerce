@@ -32,7 +32,7 @@ class DashboardMetricsController extends Controller
             
             if (empty($orders)) {
                 // Generate sample data for demo
-                $series = collect(range(0, $days - 1))->map(function ($i) {
+                $series = collect(range(0, $days - 1))->map(function ($i) use ($days) {
                     $date = Carbon::now()->subDays($days - 1 - $i)->format('Y-m-d');
                     return [
                         'date' => $date,

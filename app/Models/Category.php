@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\HasSEO;
+use App\Services\SlugService;
 
 class Category extends Model
 {
+    use HasSEO;
+    
     protected $fillable = [
         'name',
         'slug',
@@ -24,7 +28,9 @@ class Category extends Model
         'meta_description',
         'meta_keywords',
         'canonical_url',
+        'robots',
         'schema_markup',
+        'auto_update_slug',
         'is_active',
         'show_in_menu',
         'show_in_footer',
@@ -40,23 +46,44 @@ class Category extends Model
         'show_in_menu' => 'boolean',
         'show_in_footer' => 'boolean',
         'featured' => 'boolean',
+        'auto_update_slug' => 'boolean',
         'sort_order' => 'integer',
         'level' => 'integer',
-        'filters' => 'array'
+        'filters' => 'array',
+        'schema_markup' => 'array'
     ];
 
     /**
-     * Boot model - Auto generate slug and level
+     * Override SEO trait methods for category-specific behavior
+     */
+    public function getSEOEntityType(): string
+    {
+        return 'category';
+    }
+
+    /**
+     * Categories need parent-scoped slug uniqueness
+     */
+    protected function getSlugScopeConditions(): array
+    {
+        return ['parent_id' => $this->parent_id];
+    }
+
+    /**
+     * Generate category path for URLs
+     */
+    public function generateCategoryPath(): string
+    {
+        return SlugService::generateCategoryPath($this);
+    }
+    /**
+     * Boot model with enhanced SEO and tree functionality
      */
     protected static function boot()
     {
         parent::boot();
         
         static::creating(function ($category) {
-            if (!$category->slug) {
-                $category->slug = Str::slug($category->name);
-            }
-            
             // Level'i otomatik hesapla
             if ($category->parent_id) {
                 $parent = static::find($category->parent_id);
@@ -67,10 +94,6 @@ class Category extends Model
         });
         
         static::updating(function ($category) {
-            if ($category->isDirty('name') && !$category->isDirty('slug')) {
-                $category->slug = Str::slug($category->name);
-            }
-            
             // Parent değiştiyse level'i güncelle
             if ($category->isDirty('parent_id')) {
                 if ($category->parent_id) {
@@ -79,6 +102,9 @@ class Category extends Model
                 } else {
                     $category->level = 0;
                 }
+                
+                // Update all children levels recursively
+                $category->updateChildrenLevels();
             }
         });
     }
@@ -108,8 +134,53 @@ class Category extends Model
     }
 
     /**
-     * Products ilişkisi
+     * Update children levels recursively
      */
+    public function updateChildrenLevels(): void
+    {
+        $this->children()->each(function ($child) {
+            $child->level = $this->level + 1;
+            $child->saveQuietly(); // Avoid triggering events
+            $child->updateChildrenLevels();
+        });
+    }
+
+    /**
+     * Prevent circular references in category tree
+     */
+    public function canHaveParent($parentId): bool
+    {
+        if (!$parentId || $parentId == $this->id) {
+            return false;
+        }
+        
+        // Check if the proposed parent is a descendant
+        $descendants = $this->getAllDescendantIds();
+        return !in_array($parentId, $descendants);
+    }
+
+    /**
+     * Get all descendant IDs (for circular reference check)
+     */
+    public function getAllDescendantIds(): array
+    {
+        $ids = [];
+        
+        foreach ($this->children as $child) {
+            $ids[] = $child->id;
+            $ids = array_merge($ids, $child->getAllDescendantIds());
+        }
+        
+        return $ids;
+    }
+
+    /**
+     * Get full category path (parent/child format)
+     */
+    public function getFullPath(): string
+    {
+        return $this->generateCategoryPath();
+    }
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

@@ -108,7 +108,7 @@ Route::prefix('addresses')->middleware(['throttle:120,1'])->group(function () {
 |
 */
 
-Route::prefix('admin/metrics')->middleware(['throttle:30,1'])->group(function () {
+Route::prefix('admin/metrics')->middleware(['auth:sanctum', 'admin', 'throttle:30,1'])->group(function () {
     Route::get('sales-trend', [DashboardMetricsController::class, 'salesTrend'])
         ->name('api.admin.metrics.sales-trend');
     

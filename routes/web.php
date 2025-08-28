@@ -34,6 +34,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ->name('categories.toggle-status');
     Route::post('categories/bulk-action', [AdminCategoryController::class, 'bulkAction'])
         ->name('categories.bulk-action');
+    Route::post('categories/update-order', [AdminCategoryController::class, 'updateOrder'])
+        ->name('categories.update-order');
+    Route::post('categories/generate-slug', [AdminCategoryController::class, 'generateSlug'])
+        ->name('categories.generate-slug');
+    Route::get('categories/tree/json', [AdminCategoryController::class, 'getTree'])
+        ->name('categories.tree');
     
     // Brands
     Route::resource('brands', AdminBrandController::class);

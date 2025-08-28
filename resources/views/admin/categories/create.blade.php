@@ -1,4 +1,19 @@
-@extends('admin.layouts.app')
+@php
+    // Initialize empty category for create form
+    $category = new \App\Models\Category();
+    $category->exists = false;
+    
+    // Set parent if provided
+    if (request('parent_id')) {
+        $category->parent_id = request('parent_id');
+    }
+    
+    // Initialize empty collections
+    $seoAnalysis = [];
+    $urlRewrites = collect();
+@endphp
+
+@extends('admin.categories.edit')
 
 @section('title', 'Yeni Kategori')
 
