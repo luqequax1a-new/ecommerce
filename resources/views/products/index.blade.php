@@ -60,27 +60,27 @@
                             </div>
                         @endif
 
-                        <!-- Price -->
-                        @if($product->variants->count() > 0)
-                            @php
-                                $minPrice = $product->variants->min('price');
-                                $maxPrice = $product->variants->max('price');
-                                $totalStock = $product->variants->sum('stock_quantity');
-                            @endphp
-                            <div class="space-y-2">
-                                @if($minPrice == $maxPrice)
-                                    <p class="text-lg font-bold text-green-600">{{ number_format($minPrice, 2) }} ₺</p>
-                                @else
-                                    <p class="text-lg font-bold text-green-600">{{ number_format($minPrice, 2) }} - {{ number_format($maxPrice, 2) }} ₺</p>
+                        <!-- Price and Stock -->
+                        <div class="space-y-2">
+                            @if($product->isSimple())
+                                {{-- Simple Product --}}
+                                @php
+                                    $variant = $product->variants->first();
+                                    $price = $variant ? $variant->price : 0;
+                                    $stock = $product->stock_quantity;
+                                @endphp
+                                <p class="text-lg font-bold text-green-600">{{ number_format($price, 2) }} ₺</p>
+                                @if($product->unit && $product->unit->symbol !== 'adet')
+                                    <p class="text-xs text-gray-500">/ {{ $product->unit->symbol }}</p>
                                 @endif
                                 
-                                <!-- Stock Status -->
-                                @if($totalStock > 0)
+                                <!-- Stock Status for Simple Product -->
+                                @if($stock > 0)
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                         <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
                                             <circle cx="4" cy="4" r="3"/>
                                         </svg>
-                                        Stokta
+                                        Stokta ({{ $product->formatStockWithUnit($stock) }})
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -90,8 +90,40 @@
                                         Stokta Yok
                                     </span>
                                 @endif
-                            </div>
-                        @endif
+                            @else
+                                {{-- Variable Product --}}
+                                @php
+                                    $minPrice = $product->min_price;
+                                    $maxPrice = $product->max_price;
+                                    $totalStock = $product->total_stock;
+                                @endphp
+                                @if($minPrice == $maxPrice)
+                                    <p class="text-lg font-bold text-green-600">{{ number_format($minPrice, 2) }} ₺</p>
+                                @else
+                                    <p class="text-lg font-bold text-green-600">{{ number_format($minPrice, 2) }} - {{ number_format($maxPrice, 2) }} ₺</p>
+                                @endif
+                                @if($product->unit && $product->unit->symbol !== 'adet')
+                                    <p class="text-xs text-gray-500">/ {{ $product->unit->symbol }}</p>
+                                @endif
+                                
+                                <!-- Stock Status for Variable Product -->
+                                @if($totalStock > 0)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                            <circle cx="4" cy="4" r="3"/>
+                                        </svg>
+                                        Stokta ({{ $product->variants->count() }} varyant)
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                            <circle cx="4" cy="4" r="3"/>
+                                        </svg>
+                                        Stokta Yok
+                                    </span>
+                                @endif
+                            @endif
+                        </div>
 
                         <!-- Quick Action Button -->
                         <div class="pt-2">

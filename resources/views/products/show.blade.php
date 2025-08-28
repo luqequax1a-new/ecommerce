@@ -121,61 +121,112 @@
             <!-- Product Name -->
             <h1 class="text-3xl font-bold text-gray-900">{{ $product->name }}</h1>
 
-            <!-- Price -->
-            @if($product->variants->count() > 0)
-                <div class="space-y-2">
+            <!-- Price and Stock -->
+            <div class="space-y-3">
+                @if($product->isSimple())
+                    {{-- Simple Product --}}
                     @php
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
+                        $variant = $product->variants->first();
+                        $price = $variant ? $variant->price : 0;
+                        $stock = $product->stock_quantity;
+                    @endphp
+                    <p class="text-3xl font-bold text-green-600">{{ number_format($price, 2) }} ₺</p>
+                    @if($product->unit && $product->unit->symbol !== 'adet')
+                        <p class="text-sm text-gray-500">/ {{ $product->unit->symbol }}</p>
+                    @endif
+                    
+                    <!-- Stock Status for Simple Product -->
+                    <div class="flex items-center space-x-2">
+                        @if($stock > 0)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                    <circle cx="4" cy="4" r="3"/>
+                                </svg>
+                                Stokta ({{ $product->formatStockWithUnit($stock) }})
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                    <circle cx="4" cy="4" r="3"/>
+                                </svg>
+                                Stokta Yok
+                            </span>
+                        @endif
+                    </div>
+                @else
+                    {{-- Variable Product --}}
+                    @php
+                        $minPrice = $product->min_price;
+                        $maxPrice = $product->max_price;
+                        $totalStock = $product->total_stock;
                     @endphp
                     @if($minPrice == $maxPrice)
                         <p class="text-3xl font-bold text-green-600">{{ number_format($minPrice, 2) }} ₺</p>
                     @else
                         <p class="text-3xl font-bold text-green-600">{{ number_format($minPrice, 2) }} - {{ number_format($maxPrice, 2) }} ₺</p>
                     @endif
-                </div>
-            @endif
-
-            <!-- Stock Status -->
-            @php
-                $totalStock = $product->variants->sum('stock_quantity');
-            @endphp
-            <div class="flex items-center space-x-2">
-                @if($totalStock > 0)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
-                            <circle cx="4" cy="4" r="3"/>
-                        </svg>
-                        Stokta ({{ $totalStock }} adet)
-                    </span>
-                @else
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
-                            <circle cx="4" cy="4" r="3"/>
-                        </svg>
-                        Stokta Yok
-                    </span>
+                    @if($product->unit && $product->unit->symbol !== 'adet')
+                        <p class="text-sm text-gray-500">/ {{ $product->unit->symbol }}</p>
+                    @endif
+                    
+                    <!-- Stock Status for Variable Product -->
+                    <div class="flex items-center space-x-2">
+                        @if($totalStock > 0)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                    <circle cx="4" cy="4" r="3"/>
+                                </svg>
+                                Stokta ({{ $product->variants->count() }} varyant)
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                    <circle cx="4" cy="4" r="3"/>
+                                </svg>
+                                Stokta Yok
+                            </span>
+                        @endif
+                    </div>
                 @endif
             </div>
 
-            <!-- Variants -->
-            @if($product->variants->count() > 0)
+            <!-- Variants (only for variable products) -->
+            @if($product->isVariable() && $product->variants->count() > 0)
                 <div class="space-y-4">
-                    <h3 class="text-lg font-medium text-gray-900">Seçenekler</h3>
+                    <h3 class="text-lg font-medium text-gray-900">Varyantları Seçin</h3>
                     <div class="space-y-3">
                         @foreach($product->variants as $variant)
                             <div class="border rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer variant-option {{ $loop->first ? 'border-blue-500 bg-blue-50' : 'border-gray-200' }}"
                                  onclick="selectVariant(this, {{ $variant->id }}, {{ $variant->price }}, {{ $variant->stock_quantity }})">
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <p class="font-medium text-gray-900">{{ $variant->name }}</p>
-                                        @if($variant->description)
-                                            <p class="text-sm text-gray-600">{{ $variant->description }}</p>
+                                        @if($variant->attributes && is_array($variant->attributes))
+                                            <div class="flex flex-wrap gap-2">
+                                                @foreach($variant->attributes as $attrId => $valueId)
+                                                    @php
+                                                        $attributeValue = \App\Models\ProductAttributeValue::find($valueId);
+                                                    @endphp
+                                                    @if($attributeValue)
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                            @if($attributeValue->isColor())
+                                                                <span class="w-3 h-3 rounded-full mr-1 border" style="background-color: {{ $attributeValue->color_code }}"></span>
+                                                            @endif
+                                                            {{ $attributeValue->attribute->name }}: {{ $attributeValue->value }}
+                                                        </span>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <p class="font-medium text-gray-900">{{ $variant->display_name }}</p>
                                         @endif
+                                        <p class="text-xs text-gray-500 mt-1">SKU: {{ $variant->sku }}</p>
                                     </div>
                                     <div class="text-right">
                                         <p class="font-bold text-green-600">{{ number_format($variant->price, 2) }} ₺</p>
-                                        <p class="text-xs text-gray-500">Stok: {{ $variant->stock_quantity }}</p>
+                                        @if($product->unit && $product->unit->symbol !== 'adet')
+                                            <p class="text-xs text-gray-500">/ {{ $product->unit->symbol }}</p>
+                                        @endif
+                                        <p class="text-xs text-gray-500">Stok: {{ $variant->formatted_stock }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -186,20 +237,40 @@
 
             <!-- Add to Cart Button -->
             <div class="space-y-3">
-                @if($totalStock > 0)
-                    <button type="button" 
-                            id="add-to-cart-btn"
-                            onclick="addToCart()"
-                            class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6.05"></path>
-                        </svg>
-                        <span>Sepete Ekle</span>
-                    </button>
+                @if($product->isSimple())
+                    {{-- Simple Product --}}
+                    @if($product->stock_quantity > 0)
+                        <button type="button" 
+                                onclick="addToCartSimple()"
+                                class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6.05"></path>
+                            </svg>
+                            <span>Sepete Ekle</span>
+                        </button>
+                    @else
+                        <button type="button" disabled class="w-full bg-gray-400 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed">
+                            Stokta Yok
+                        </button>
+                    @endif
                 @else
-                    <button type="button" disabled class="w-full bg-gray-400 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed">
-                        Stokta Yok
-                    </button>
+                    {{-- Variable Product --}}
+                    @php $totalStock = $product->total_stock; @endphp
+                    @if($totalStock > 0)
+                        <button type="button" 
+                                id="add-to-cart-btn"
+                                onclick="addToCart()"
+                                class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6.05"></path>
+                            </svg>
+                            <span>Sepete Ekle</span>
+                        </button>
+                    @else
+                        <button type="button" disabled class="w-full bg-gray-400 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed">
+                            Stokta Yok
+                        </button>
+                    @endif
                 @endif
             </div>
         </div>
@@ -263,9 +334,21 @@
 
 @push('scripts')
 <script>
-let selectedVariantId = {{ $product->variants->first()?->id ?? 'null' }};
-let selectedPrice = {{ $product->variants->first()?->price ?? 0 }};
-let selectedStock = {{ $product->variants->first()?->stock_quantity ?? 0 }};
+// Product type and initial values
+const productType = '{{ $product->product_type }}';
+const isSimple = productType === 'simple';
+
+@if($product->isSimple())
+    // Simple product values
+    const simpleVariantId = {{ $product->variants->first()?->id ?? 'null' }};
+    const simplePrice = {{ $product->variants->first()?->price ?? 0 }};
+    const simpleStock = {{ $product->stock_quantity }};
+@else
+    // Variable product values
+    let selectedVariantId = {{ $product->variants->first()?->id ?? 'null' }};
+    let selectedPrice = {{ $product->variants->first()?->price ?? 0 }};
+    let selectedStock = {{ $product->variants->first()?->stock_quantity ?? 0 }};
+@endif
 
 // Initialize Swiper for mobile gallery
 @if($product->images->count() > 1)
@@ -351,6 +434,11 @@ function selectVariant(element, variantId, price, stock) {
 }
 
 function addToCart() {
+    if (isSimple) {
+        addToCartSimple();
+        return;
+    }
+    
     if (!selectedVariantId || selectedStock <= 0) {
         alert('Lütfen bir seçenek belirleyin.');
         return;
@@ -358,6 +446,16 @@ function addToCart() {
     
     // Here you would typically make an AJAX request to add the item to cart
     alert(`Ürün sepete eklendi!\nVaryant ID: ${selectedVariantId}\nFiyat: ${selectedPrice.toFixed(2)} ₺`);
+}
+
+function addToCartSimple() {
+    if (simpleStock <= 0) {
+        alert('Bu ürün stokta yok.');
+        return;
+    }
+    
+    // Here you would typically make an AJAX request to add the item to cart
+    alert(`Ürün sepete eklendi!\nVaryant ID: ${simpleVariantId}\nFiyat: ${simplePrice.toFixed(2)} ₺`);
 }
 
 function openImageModal(src) {

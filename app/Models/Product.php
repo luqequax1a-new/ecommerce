@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Services\StockHelper;
 
 class Product extends Model
 {
@@ -15,6 +16,8 @@ class Product extends Model
         'category_id',
         'brand_id',
         'unit_id',
+        'product_type',
+        'stock_quantity',
         'is_active',
         'meta_title',
         'meta_description',
@@ -22,7 +25,8 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'stock_quantity' => 'decimal:3'
     ];
 
     /**
@@ -100,11 +104,11 @@ class Product extends Model
     }
 
     /**
-     * Toplam stok miktarını al
+     * Toplam stok miktarını al - product type'a göre
      */
     public function getTotalStockAttribute()
     {
-        return $this->variants->sum('stock_quantity') ?? 0;
+        return StockHelper::calculateTotalStock($this);
     }
 
     /**
@@ -112,14 +116,7 @@ class Product extends Model
      */
     public function formatStockWithUnit($quantity): string
     {
-        if (!$this->unit) {
-            return number_format($quantity, 3);
-        }
-        
-        // Remove unnecessary decimal places
-        $formatted = rtrim(rtrim(number_format($quantity, 3), '0'), '.');
-        
-        return $formatted . ' ' . $this->unit->symbol;
+        return StockHelper::formatStockWithUnit($quantity, $this->unit);
     }
 
     /**
@@ -127,29 +124,38 @@ class Product extends Model
      */
     public function formatPriceWithUnit($price): string
     {
-        $formattedPrice = number_format($price, 2) . ' ₺';
-        
-        if ($this->unit && $this->unit->symbol !== 'adet') {
-            $formattedPrice .= '/' . $this->unit->symbol;
-        }
-        
-        return $formattedPrice;
+        return StockHelper::formatPriceWithUnit($price, $this->unit);
     }
 
     /**
-     * Ürünün minimum fiyatını al
+     * Product type helper methods
+     */
+    public function isSimple(): bool
+    {
+        return $this->product_type === 'simple';
+    }
+
+    public function isVariable(): bool
+    {
+        return $this->product_type === 'variable';
+    }
+
+    /**
+     * Ürünün minimum fiyatını al - product type'a göre
      */
     public function getMinPriceAttribute()
     {
-        return $this->variants->min('price') ?? 0;
+        $range = StockHelper::getPriceRange($this);
+        return $range['min'];
     }
 
     /**
-     * Ürünün maksimum fiyatını al
+     * Ürünün maksimum fiyatını al - product type'a göre
      */
     public function getMaxPriceAttribute()
     {
-        return $this->variants->max('price') ?? 0;
+        $range = StockHelper::getPriceRange($this);
+        return $range['max'];
     }
 
     /**
@@ -157,14 +163,65 @@ class Product extends Model
      */
     public function getPriceRangeAttribute(): string
     {
-        $min = $this->min_price;
-        $max = $this->max_price;
-        
-        if ($min == $max) {
-            return number_format($min, 2) . ' TL';
-        }
-        
-        return number_format($min, 2) . ' - ' . number_format($max, 2) . ' TL';
+        return StockHelper::formatPriceRange($this, $this->unit);
+    }
+
+    /**
+     * Get stock status for this product
+     */
+    public function getStockStatus(float $lowStockThreshold = 5): string
+    {
+        return StockHelper::getStockStatus($this, $lowStockThreshold);
+    }
+
+    /**
+     * Get stock status badge HTML
+     */
+    public function getStockStatusBadge(float $lowStockThreshold = 5): string
+    {
+        $status = $this->getStockStatus($lowStockThreshold);
+        $totalStock = $this->total_stock;
+        return StockHelper::getStockStatusBadge($status, $totalStock, $this->unit);
+    }
+
+    /**
+     * Check if product has sufficient stock
+     */
+    public function hasSufficientStock(float $requestedQuantity): bool
+    {
+        return StockHelper::hasSufficientStock($this, $requestedQuantity);
+    }
+
+    /**
+     * Get stock value (quantity * price)
+     */
+    public function getStockValue(): float
+    {
+        return StockHelper::calculateStockValue($this);
+    }
+
+    /**
+     * Check if product is in stock
+     */
+    public function isInStock(): bool
+    {
+        return $this->total_stock > 0;
+    }
+
+    /**
+     * Check if product is low on stock
+     */
+    public function isLowStock(float $threshold = 5): bool
+    {
+        return $this->getStockStatus($threshold) === StockHelper::STATUS_LOW_STOCK;
+    }
+
+    /**
+     * Check if product is out of stock
+     */
+    public function isOutOfStock(): bool
+    {
+        return $this->getStockStatus() === StockHelper::STATUS_OUT_OF_STOCK;
     }
 
     /**
@@ -225,6 +282,35 @@ class Product extends Model
     public function scopeByBrand($query, $brandId)
     {
         return $query->where('brand_id', $brandId);
+    }
+
+    /**
+     * Scope: Basit ürünler
+     */
+    public function scopeSimple($query)
+    {
+        return $query->where('product_type', 'simple');
+    }
+
+    /**
+     * Scope: Varyantlı ürünler
+     */
+    public function scopeVariable($query)
+    {
+        return $query->where('product_type', 'variable');
+    }
+
+    /**
+     * Scope: Stokta olan ürünler
+     */
+    public function scopeInStock($query)
+    {
+        return $query->whereHas('variants', function ($q) {
+            $q->where('stock_quantity', '>', 0);
+        })->orWhere(function ($q) {
+            $q->where('product_type', 'simple')
+              ->where('stock_quantity', '>', 0);
+        });
     }
 
     /**

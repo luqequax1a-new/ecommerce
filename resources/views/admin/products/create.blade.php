@@ -136,50 +136,43 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Varyant Bilgileri -->
+
+            <!-- Ürün Tipi Seçimi -->
             <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Ana Varyant</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Ürün Tipi ve Birim</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="sku" class="block text-sm font-medium text-gray-700">SKU *</label>
-                        <input type="text" 
-                               name="sku" 
-                               id="sku" 
-                               value="{{ old('sku') }}"
-                               required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('sku') border-red-300 @enderror">
-                        @error('sku')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    
-                    <div>
-                        <label for="price" class="block text-sm font-medium text-gray-700">Fiyat (TL) *</label>
-                        <input type="number" 
-                               name="price" 
-                               id="price" 
-                               step="0.01"
-                               min="0"
-                               value="{{ old('price') }}"
-                               required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('price') border-red-300 @enderror">
-                        @error('price')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    
-                    <div>
-                        <label for="stock_qty" class="block text-sm font-medium text-gray-700">Stok Miktarı *</label>
-                        <input type="number" 
-                               name="stock_qty" 
-                               id="stock_qty" 
-                               min="0"
-                               value="{{ old('stock_qty', 0) }}"
-                               required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('stock_qty') border-red-300 @enderror">
-                        @error('stock_qty')
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Ürün Tipi *</label>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input id="product_type_simple" 
+                                       name="product_type" 
+                                       type="radio" 
+                                       value="simple"
+                                       x-model="form.productType"
+                                       {{ old('product_type', 'simple') == 'simple' ? 'checked' : '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                <label for="product_type_simple" class="ml-2 block text-sm text-gray-900">
+                                    <span class="font-medium">Basit Ürün</span>
+                                    <span class="block text-xs text-gray-500">Tek varyant, direkt stok yönetimi</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="product_type_variable" 
+                                       name="product_type" 
+                                       type="radio" 
+                                       value="variable"
+                                       x-model="form.productType"
+                                       {{ old('product_type') == 'variable' ? 'checked' : '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                <label for="product_type_variable" class="ml-2 block text-sm text-gray-900">
+                                    <span class="font-medium">Varyantlı Ürün</span>
+                                    <span class="block text-xs text-gray-500">Farklı özellikler (renk, beden vb.)</span>
+                                </label>
+                            </div>
+                        </div>
+                        @error('product_type')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -200,33 +193,119 @@
                         @error('unit_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-sm text-gray-500">Tüm varyantlar bu birimi kullanacak</p>
                     </div>
-
+                </div>
+            </div>
+            
+            <!-- Basit Ürün - Stok ve Fiyat -->
+            <div x-show="form.productType === 'simple'" class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Stok ve Fiyat Bilgileri</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label for="weight" class="block text-sm font-medium text-gray-700">Ağırlık (kg)</label>
-                        <input type="number" 
-                               name="weight" 
-                               id="weight" 
-                               step="0.001"
-                               min="0"
-                               value="{{ old('weight') }}"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('weight') border-red-300 @enderror">
-                        @error('weight')
+                        <label for="simple_sku" class="block text-sm font-medium text-gray-700">SKU *</label>
+                        <input type="text" 
+                               name="simple_sku" 
+                               id="simple_sku" 
+                               value="{{ old('simple_sku') }}"
+                               x-bind:required="form.productType === 'simple'"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('simple_sku') border-red-300 @enderror">
+                        @error('simple_sku')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
                     
-                    <div class="md:col-span-2">
-                        <label for="attributes" class="block text-sm font-medium text-gray-700">Özellikler</label>
-                        <input type="text" 
-                               name="attributes" 
-                               id="attributes" 
-                               value="{{ old('attributes') }}"
-                               placeholder="Örn: Renk: Kırmızı, Beden: M"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('attributes') border-red-300 @enderror">
-                        @error('attributes')
+                    <div>
+                        <label for="simple_price" class="block text-sm font-medium text-gray-700">Fiyat (TL) *</label>
+                        <input type="number" 
+                               name="simple_price" 
+                               id="simple_price" 
+                               step="0.01"
+                               min="0"
+                               value="{{ old('simple_price') }}"
+                               x-bind:required="form.productType === 'simple'"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('simple_price') border-red-300 @enderror">
+                        @error('simple_price')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
+                    </div>
+                    
+                    <div>
+                        <label for="stock_quantity" class="block text-sm font-medium text-gray-700">Stok Miktarı *</label>
+                        <input type="number" 
+                               name="stock_quantity" 
+                               id="stock_quantity" 
+                               step="0.001"
+                               min="0"
+                               value="{{ old('stock_quantity', 0) }}"
+                               x-bind:required="form.productType === 'simple'"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('stock_quantity') border-red-300 @enderror">
+                        @error('stock_quantity')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-sm text-gray-500">Ondalık değerler desteklenir (0.001 hassasiyet)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Varyantlı Ürün - Özellik Seçimi -->
+            <div x-show="form.productType === 'variable'" class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Varyant Özellikleri</h3>
+                
+                <div class="space-y-4">
+                    <p class="text-sm text-gray-600">
+                        Ürününüz için hangi özelliklerin varyant oluşturacağını seçin (renk, beden, stil vb.).
+                    </p>
+                    
+                    @php
+                        $attributes = \App\Models\ProductAttribute::active()->variation()->ordered()->with('activeValues')->get();
+                    @endphp
+                    
+                    @foreach($attributes as $attribute)
+                        <div class="border rounded-lg p-4">
+                            <div class="flex items-center mb-3">
+                                <input type="checkbox" 
+                                       name="selected_attributes[]" 
+                                       value="{{ $attribute->id }}"
+                                       id="attr_{{ $attribute->id }}"
+                                       x-model="form.selectedAttributes"
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="attr_{{ $attribute->id }}" class="ml-2 block text-sm font-medium text-gray-700">
+                                    {{ $attribute->name }}
+                                </label>
+                            </div>
+                            
+                            <div x-show="form.selectedAttributes.includes('{{ $attribute->id }}')"
+                                 class="grid grid-cols-2 md:grid-cols-4 gap-2 ml-6">
+                                @foreach($attribute->activeValues as $value)
+                                    <label class="flex items-center space-x-2 text-sm">
+                                        <input type="checkbox" 
+                                               name="attribute_values[{{ $attribute->id }}][]" 
+                                               value="{{ $value->id }}"
+                                               class="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        @if($attribute->type === 'color')
+                                            <span class="w-4 h-4 rounded border" style="background-color: {{ $value->color_code }}"></span>
+                                        @endif
+                                        <span>{{ $value->value }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-blue-800">Bilgi</h3>
+                                <div class="mt-2 text-sm text-blue-700">
+                                    <p>Özellik seçtikten sonra, bir sonraki adımda her kombinasyon için fiyat ve stok bilgilerini girebileceksiniz.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -386,7 +465,9 @@ function productForm() {
     return {
         form: {
             name: '',
-            slug: ''
+            slug: '',
+            productType: 'simple',
+            selectedAttributes: []
         },
         updateSlug() {
             if (this.form.name && !this.form.slug) {
@@ -397,6 +478,16 @@ function productForm() {
                     .replace(/-+/g, '-')
                     .trim('-');
             }
+        },
+        init() {
+            // Initialize product type from old value if exists
+            const oldProductType = '{{ old("product_type", "simple") }}';
+            this.form.productType = oldProductType;
+            
+            // Initialize selected attributes from old values if exists
+            @if(old('selected_attributes'))
+                this.form.selectedAttributes = @json(old('selected_attributes'));
+            @endif
         }
     }
 }
@@ -455,5 +546,61 @@ function imageUploader() {
         }
     }
 }
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(e) {
+        const productType = document.querySelector('input[name="product_type"]:checked')?.value;
+        
+        if (productType === 'simple') {
+            // Simple product validation
+            const requiredFields = ['simple_sku', 'simple_price', 'stock_quantity'];
+            let hasError = false;
+            
+            requiredFields.forEach(field => {
+                const input = document.querySelector(`input[name="${field}"]`);
+                if (!input || !input.value.trim()) {
+                    hasError = true;
+                    if (input) {
+                        input.classList.add('border-red-300');
+                    }
+                }
+            });
+            
+            if (hasError) {
+                e.preventDefault();
+                alert('Lütfen tüm gerekli alanları doldurun.');
+                return;
+            }
+        } else if (productType === 'variable') {
+            // Variable product validation
+            const selectedAttributes = document.querySelectorAll('input[name="selected_attributes[]"]:checked');
+            
+            if (selectedAttributes.length === 0) {
+                e.preventDefault();
+                alert('Varyantlı ürün için en az bir özellik seçmelisiniz.');
+                return;
+            }
+            
+            // Check if at least one value is selected for each attribute
+            let hasAllValues = true;
+            selectedAttributes.forEach(attr => {
+                const attrId = attr.value;
+                const values = document.querySelectorAll(`input[name="attribute_values[${attrId}][]"]:checked`);
+                if (values.length === 0) {
+                    hasAllValues = false;
+                }
+            });
+            
+            if (!hasAllValues) {
+                e.preventDefault();
+                alert('Seçilen her özellik için en az bir değer seçmelisiniz.');
+                return;
+            }
+        }
+    });
+});
 </script>
 @endpush

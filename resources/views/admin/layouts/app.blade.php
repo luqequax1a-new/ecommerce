@@ -28,16 +28,30 @@
                     </div>
                     <div class="hidden md:block">
                         <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="{{ route('admin.dashboard') }}" 
+                               class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium
+                                      {{ request()->routeIs('admin.dashboard*') ? 'bg-blue-700 text-white' : '' }}">
+                                Dashboard
+                            </a>
                             <a href="{{ route('admin.products.index') }}" 
                                class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium
                                       {{ request()->routeIs('admin.products.*') ? 'bg-blue-700 text-white' : '' }}">
                                 Ürünler
                             </a>
-                            <a href="#" class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            <a href="{{ route('admin.categories.index') }}" 
+                               class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium
+                                      {{ request()->routeIs('admin.categories.*') ? 'bg-blue-700 text-white' : '' }}">
                                 Kategoriler
                             </a>
-                            <a href="#" class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                Siparişler
+                            <a href="{{ route('admin.brands.index') }}" 
+                               class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium
+                                      {{ request()->routeIs('admin.brands.*') ? 'bg-blue-700 text-white' : '' }}">
+                                Markalar
+                            </a>
+                            <a href="{{ route('admin.system.info') }}" 
+                               class="text-gray-300 hover:bg-blue-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium
+                                      {{ request()->routeIs('admin.system.*') ? 'bg-blue-700 text-white' : '' }}">
+                                Sistem
                             </a>
                         </div>
                     </div>

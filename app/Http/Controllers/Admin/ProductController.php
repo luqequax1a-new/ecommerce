@@ -62,27 +62,50 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        // Base validation
+        $rules = [
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products',
             'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            
-            // Varyant bilgileri
-            'sku' => 'required|string|max:100|unique:product_variants',
-            'price' => 'required|numeric|min:0',
-            'stock_qty' => 'required|integer|min:0',
+            'short_description' => 'nullable|string',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand_id' => 'nullable|exists:brands,id',
             'unit_id' => 'required|exists:units,id',
-            'attributes' => 'nullable|string',
+            'product_type' => 'required|in:simple,variable',
+            'is_active' => 'boolean',
+            'featured' => 'boolean',
+            'weight' => 'nullable|numeric|min:0',
             
-            // Görsel bilgileri
+            // SEO fields
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
+            
+            // Image validation
             'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,gif,webp|max:10240', // 10MB
+            'images.*' => 'image|mimes:jpeg,png,gif,webp|max:10240',
             'image_alt_texts' => 'nullable|array',
             'image_alt_texts.*' => 'nullable|string|max:255',
-        ]);
+        ];
         
-        // Slug oluştur
+        // Product type specific validation
+        if ($request->product_type === 'simple') {
+            $rules = array_merge($rules, [
+                'simple_sku' => 'required|string|max:100|unique:product_variants,sku',
+                'simple_price' => 'required|numeric|min:0',
+                'stock_quantity' => 'required|numeric|min:0',
+            ]);
+        } else {
+            $rules = array_merge($rules, [
+                'selected_attributes' => 'required|array|min:1',
+                'selected_attributes.*' => 'exists:product_attributes,id',
+                'attribute_values' => 'required|array',
+            ]);
+        }
+        
+        $request->validate($rules);
+        
+        // Generate slug
         $slug = $request->slug ?: Str::slug($request->name);
         $originalSlug = $slug;
         $counter = 1;
@@ -92,29 +115,45 @@ class ProductController extends Controller
             $counter++;
         }
         
-        // Ürün oluştur
+        // Create product
         $product = Product::create([
             'name' => $request->name,
             'slug' => $slug,
             'description' => $request->description,
-            'is_active' => $request->boolean('is_active', true)
-        ]);
-        
-        // Ana varyant oluştur
-        ProductVariant::create([
-            'product_id' => $product->id,
-            'sku' => $request->sku,
-            'price' => $request->price,
-            'stock_qty' => $request->stock_qty,
+            'short_description' => $request->short_description,
+            'category_id' => $request->category_id,
+            'brand_id' => $request->brand_id,
             'unit_id' => $request->unit_id,
-            'attributes' => $request->attributes
+            'product_type' => $request->product_type,
+            'stock_quantity' => $request->product_type === 'simple' ? $request->stock_quantity : 0,
+            'weight' => $request->weight,
+            'is_active' => $request->boolean('is_active', true),
+            'featured' => $request->boolean('featured', false),
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
+            'meta_keywords' => $request->meta_keywords,
         ]);
         
-        // Görselleri yükle
+        // Handle variants based on product type
+        if ($request->product_type === 'simple') {
+            // Create single variant for simple product
+            ProductVariant::create([
+                'product_id' => $product->id,
+                'sku' => $request->simple_sku,
+                'price' => $request->simple_price,
+                'stock_quantity' => $request->stock_quantity,
+                'attributes' => null, // Simple products don't have attributes
+            ]);
+        } else {
+            // Create combinations for variable product
+            $this->createVariantCombinations($product, $request);
+        }
+        
+        // Handle images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $file) {
                 $altText = $request->image_alt_texts[$index] ?? null;
-                $isCover = $index === 0; // İlk görsel cover
+                $isCover = $index === 0; // First image as cover
                 
                 $this->imageService->uploadProductImage(
                     $product, 
@@ -126,8 +165,83 @@ class ProductController extends Controller
             }
         }
         
+        $message = $request->product_type === 'simple' 
+            ? 'Basit ürün başarıyla oluşturuldu.' 
+            : 'Varyantlı ürün başarıyla oluşturuldu. Varyant fiyat ve stok bilgilerini düzenleyebilirsiniz.';
+            
         return redirect()->route('admin.products.index')
-            ->with('success', 'Ürün başarıyla oluşturuldu.');
+            ->with('success', $message);
+    }
+    
+    /**
+     * Create variant combinations for variable products
+     */
+    private function createVariantCombinations(Product $product, Request $request)
+    {
+        $selectedAttributes = $request->selected_attributes;
+        $attributeValues = $request->attribute_values;
+        
+        // Get all possible combinations
+        $combinations = $this->generateCombinations($attributeValues);
+        
+        foreach ($combinations as $index => $combination) {
+            // Create SKU from combination
+            $sku = $product->slug . '-' . ($index + 1);
+            
+            // Make sure SKU is unique
+            $originalSku = $sku;
+            $counter = 1;
+            while (ProductVariant::where('sku', $sku)->exists()) {
+                $sku = $originalSku . '-' . $counter;
+                $counter++;
+            }
+            
+            // Create variant with default values
+            ProductVariant::create([
+                'product_id' => $product->id,
+                'sku' => $sku,
+                'price' => 0, // Admin will set this later
+                'stock_quantity' => 0, // Admin will set this later
+                'attributes' => $combination,
+            ]);
+        }
+    }
+    
+    /**
+     * Generate all possible attribute combinations
+     */
+    private function generateCombinations(array $attributeValues)
+    {
+        $combinations = [];
+        $keys = array_keys($attributeValues);
+        
+        if (empty($keys)) {
+            return [];
+        }
+        
+        // Start with first attribute
+        $firstKey = $keys[0];
+        foreach ($attributeValues[$firstKey] as $value) {
+            $combinations[] = [$firstKey => $value];
+        }
+        
+        // Add other attributes
+        for ($i = 1; $i < count($keys); $i++) {
+            $newCombinations = [];
+            $currentKey = $keys[$i];
+            
+            foreach ($combinations as $combination) {
+                foreach ($attributeValues[$currentKey] as $value) {
+                    $newCombination = $combination;
+                    $newCombination[$currentKey] = $value;
+                    $newCombinations[] = $newCombination;
+                }
+            }
+            
+            $combinations = $newCombinations;
+        }
+        
+        return $combinations;
     }
 
     /**
