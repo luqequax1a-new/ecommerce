@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Services\StockHelper;
+use App\Models\Unit;
 
 class ProductVariant extends Model
 {
@@ -33,6 +34,22 @@ class ProductVariant extends Model
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class, 'product_variant_id');
+    }
+
+    /**
+     * Unit relationship (through product)
+     * Variants inherit unit from their parent product
+     */
+    public function unit()
+    {
+        return $this->hasOneThrough(
+            Unit::class,
+            Product::class,
+            'id', // Foreign key on Product table
+            'id', // Foreign key on Unit table
+            'product_id', // Local key on ProductVariant table
+            'unit_id' // Local key on Product table
+        );
     }
 
     /**
