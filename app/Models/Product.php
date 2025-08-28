@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Services\StockHelper;
+use App\Services\TaxCalculationService;
 
 class Product extends Model
 {
@@ -16,8 +17,13 @@ class Product extends Model
         'category_id',
         'brand_id',
         'unit_id',
+        'tax_class_id',
         'product_type',
         'stock_quantity',
+        'price',
+        'compare_price',
+        'cost_price',
+        'sku',
         'is_active',
         'meta_title',
         'meta_description',
@@ -26,7 +32,10 @@ class Product extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'stock_quantity' => 'decimal:3'
+        'stock_quantity' => 'decimal:3',
+        'price' => 'decimal:2',
+        'compare_price' => 'decimal:2',
+        'cost_price' => 'decimal:2'
     ];
 
     /**
@@ -51,6 +60,14 @@ class Product extends Model
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    /**
+     * Tax class relationship
+     */
+    public function taxClass(): BelongsTo
+    {
+        return $this->belongsTo(TaxClass::class);
     }
 
     /**
@@ -327,5 +344,172 @@ class Product extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    // ===== TAX CALCULATION METHODS =====
+
+    /**
+     * Calculate tax for this product with given conditions
+     */
+    public function calculateTax(float $basePrice = null, array $conditions = []): array
+    {
+        $price = $basePrice ?? $this->price ?? 0;
+        
+        if ($price <= 0) {
+            return [
+                'tax_amount' => 0,
+                'effective_rate' => 0,
+                'total_with_tax' => 0,
+                'base_amount' => 0
+            ];
+        }
+
+        $taxService = app(TaxCalculationService::class);
+        
+        return $taxService->calculateProductTax($this, $price, $conditions);
+    }
+
+    /**
+     * Get price including tax
+     */
+    public function getPriceWithTax(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return $taxResult['total_with_tax'] ?? $this->price;
+    }
+
+    /**
+     * Get tax amount for current price
+     */
+    public function getTaxAmount(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return $taxResult['tax_amount'] ?? 0;
+    }
+
+    /**
+     * Get effective tax rate as percentage
+     */
+    public function getEffectiveTaxRate(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return ($taxResult['effective_rate'] ?? 0) * 100;
+    }
+
+    /**
+     * Format price with tax info for display
+     */
+    public function getFormattedPriceWithTax(array $conditions = []): array
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        $taxService = app(TaxCalculationService::class);
+        
+        return [
+            'base_price' => '₺' . number_format($this->price, 2),
+            'tax_amount' => '₺' . number_format($taxResult['tax_amount'] ?? 0, 2),
+            'total_price' => '₺' . number_format($taxResult['total_with_tax'] ?? $this->price, 2),
+            'tax_rate' => number_format(($taxResult['effective_rate'] ?? 0) * 100, 2) . '%',
+            'tax_class' => $taxResult['tax_class_name'] ?? 'No Tax'
+        ];
+    }
+
+    /**
+     * Get minimum price with tax (for variable products)
+     */
+    public function getMinPriceWithTax(array $conditions = []): float
+    {
+        if ($this->isVariable()) {
+            $minVariant = $this->variants()->orderBy('price')->first();
+            if ($minVariant) {
+                return $minVariant->getPriceWithTax($conditions);
+            }
+        }
+        
+        return $this->getPriceWithTax($conditions);
+    }
+
+    /**
+     * Get maximum price with tax (for variable products)
+     */
+    public function getMaxPriceWithTax(array $conditions = []): float
+    {
+        if ($this->isVariable()) {
+            $maxVariant = $this->variants()->orderBy('price', 'desc')->first();
+            if ($maxVariant) {
+                return $maxVariant->getPriceWithTax($conditions);
+            }
+        }
+        
+        return $this->getPriceWithTax($conditions);
+    }
+
+    /**
+     * Get formatted price range with tax
+     */
+    public function getFormattedPriceRangeWithTax(array $conditions = []): string
+    {
+        if ($this->isVariable()) {
+            $minPrice = $this->getMinPriceWithTax($conditions);
+            $maxPrice = $this->getMaxPriceWithTax($conditions);
+            
+            if ($minPrice == $maxPrice) {
+                return '₺' . number_format($minPrice, 2);
+            }
+            
+            return '₺' . number_format($minPrice, 2) . ' - ₺' . number_format($maxPrice, 2);
+        }
+        
+        return '₺' . number_format($this->getPriceWithTax($conditions), 2);
+    }
+
+    /**
+     * Check if product has tax configured
+     */
+    public function hasTax(): bool
+    {
+        return $this->tax_class_id !== null && $this->taxClass !== null;
+    }
+
+    /**
+     * Get tax class name
+     */
+    public function getTaxClassName(): ?string
+    {
+        return $this->taxClass?->name;
+    }
+
+    /**
+     * Check if this product uses Turkish VAT
+     */
+    public function usesTurkishVAT(): bool
+    {
+        return $this->taxClass?->isTurkishVAT() ?? false;
+    }
+
+    /**
+     * Scope: Products with tax class
+     */
+    public function scopeWithTax($query)
+    {
+        return $query->whereNotNull('tax_class_id');
+    }
+
+    /**
+     * Scope: Products by tax class
+     */
+    public function scopeByTaxClass($query, $taxClassId)
+    {
+        return $query->where('tax_class_id', $taxClassId);
+    }
+
+    /**
+     * Scope: Products using Turkish VAT
+     */
+    public function scopeTurkishVAT($query)
+    {
+        return $query->whereHas('taxClass', function ($q) {
+            $q->where('code', 'like', 'TR_VAT_%')
+              ->orWhere('code', 'like', 'TR_KDV_%');
+        });
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Services\StockHelper;
+use App\Services\TaxCalculationService;
 use App\Models\Unit;
 
 class ProductVariant extends Model
@@ -159,5 +160,130 @@ class ProductVariant extends Model
     public function isOutOfStock(): bool
     {
         return $this->getStockStatus() === StockHelper::STATUS_OUT_OF_STOCK;
+    }
+
+    // ===== TAX CALCULATION METHODS =====
+
+    /**
+     * Calculate tax for this variant (inherits from product)
+     */
+    public function calculateTax(float $basePrice = null, array $conditions = []): array
+    {
+        $price = $basePrice ?? $this->price ?? 0;
+        
+        if ($price <= 0) {
+            return [
+                'tax_amount' => 0,
+                'effective_rate' => 0,
+                'total_with_tax' => 0,
+                'base_amount' => 0
+            ];
+        }
+
+        // Use product's tax class and entity ID for rule matching
+        $conditions = array_merge([
+            'entity_type' => 'product',
+            'entity_id' => $this->product_id
+        ], $conditions);
+
+        $taxService = app(TaxCalculationService::class);
+        
+        return $taxService->calculateProductTax($this->product, $price, $conditions);
+    }
+
+    /**
+     * Get variant price including tax
+     */
+    public function getPriceWithTax(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return $taxResult['total_with_tax'] ?? $this->price;
+    }
+
+    /**
+     * Get tax amount for variant price
+     */
+    public function getTaxAmount(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return $taxResult['tax_amount'] ?? 0;
+    }
+
+    /**
+     * Get effective tax rate as percentage for this variant
+     */
+    public function getEffectiveTaxRate(array $conditions = []): float
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        return ($taxResult['effective_rate'] ?? 0) * 100;
+    }
+
+    /**
+     * Format variant price with tax info for display
+     */
+    public function getFormattedPriceWithTax(array $conditions = []): array
+    {
+        $taxResult = $this->calculateTax(null, $conditions);
+        
+        return [
+            'base_price' => '₺' . number_format($this->price, 2),
+            'tax_amount' => '₺' . number_format($taxResult['tax_amount'] ?? 0, 2),
+            'total_price' => '₺' . number_format($taxResult['total_with_tax'] ?? $this->price, 2),
+            'tax_rate' => number_format(($taxResult['effective_rate'] ?? 0) * 100, 2) . '%',
+            'tax_class' => $taxResult['tax_class_name'] ?? 'No Tax'
+        ];
+    }
+
+    /**
+     * Get tax class from parent product
+     */
+    public function getTaxClass()
+    {
+        return $this->product->taxClass;
+    }
+
+    /**
+     * Get tax class name from parent product
+     */
+    public function getTaxClassName(): ?string
+    {
+        return $this->product->getTaxClassName();
+    }
+
+    /**
+     * Check if variant has tax configured (through product)
+     */
+    public function hasTax(): bool
+    {
+        return $this->product->hasTax();
+    }
+
+    /**
+     * Check if this variant uses Turkish VAT (through product)
+     */
+    public function usesTurkishVAT(): bool
+    {
+        return $this->product->usesTurkishVAT();
+    }
+
+    /**
+     * Scope: Variants with tax class (through product)
+     */
+    public function scopeWithTax($query)
+    {
+        return $query->whereHas('product', function ($q) {
+            $q->whereNotNull('tax_class_id');
+        });
+    }
+
+    /**
+     * Scope: Variants using Turkish VAT (through product)
+     */
+    public function scopeTurkishVAT($query)
+    {
+        return $query->whereHas('product.taxClass', function ($q) {
+            $q->where('code', 'like', 'TR_VAT_%')
+              ->orWhere('code', 'like', 'TR_KDV_%');
+        });
     }
 }
