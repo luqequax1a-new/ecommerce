@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\DashboardMetricsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -95,4 +96,40 @@ Route::prefix('addresses')->middleware(['throttle:120,1'])->group(function () {
         Route::get('defaults/all', [AddressController::class, 'defaults'])
             ->name('api.addresses.defaults');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Dashboard Metrics API Routes
+|--------------------------------------------------------------------------
+|
+| Routes for admin dashboard metrics with authentication and rate limiting
+| Provides real-time data for KPIs, charts, and monitoring widgets
+|
+*/
+
+Route::prefix('admin/metrics')->middleware(['throttle:30,1'])->group(function () {
+    Route::get('sales-trend', [DashboardMetricsController::class, 'salesTrend'])
+        ->name('api.admin.metrics.sales-trend');
+    
+    Route::get('order-status', [DashboardMetricsController::class, 'orderStatus'])
+        ->name('api.admin.metrics.order-status');
+    
+    Route::get('category-sales', [DashboardMetricsController::class, 'categorySales'])
+        ->name('api.admin.metrics.category-sales');
+    
+    Route::get('top-products', [DashboardMetricsController::class, 'topProducts'])
+        ->name('api.admin.metrics.top-products');
+    
+    Route::get('active-carts', [DashboardMetricsController::class, 'activeCarts'])
+        ->name('api.admin.metrics.active-carts');
+    
+    Route::get('stock-alerts', [DashboardMetricsController::class, 'stockAlerts'])
+        ->name('api.admin.metrics.stock-alerts');
+    
+    Route::get('cron-summary', [DashboardMetricsController::class, 'cronSummary'])
+        ->name('api.admin.metrics.cron-summary');
+    
+    Route::get('today-kpis', [DashboardMetricsController::class, 'todayKpis'])
+        ->name('api.admin.metrics.today-kpis');
 });

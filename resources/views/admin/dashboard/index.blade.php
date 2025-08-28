@@ -1,274 +1,361 @@
-@extends('admin.layouts.app')
+@extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', 'Admin Dashboard')
 
 @section('content')
-<div class=\"space-y-6\">
+<div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <div class=\"md:flex md:items-center md:justify-between\">
-        <div class=\"flex-1 min-w-0\">
-            <h2 class=\"text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate\">
-                Dashboard
-            </h2>
-            <p class=\"mt-1 text-sm text-gray-500\">
-                E-ticaret yönetim paneli - {{ now()->format('d.m.Y H:i') }}
-            </p>
-        </div>
-        <div class=\"mt-4 flex md:mt-0 md:ml-4\">
-            <a href=\"{{ route('admin.system.info') }}\" 
-               class=\"ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50\">
-                <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                    <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"></path>
-                </svg>
-                Sistem Bilgisi
-            </a>
-        </div>
-    </div>
-
-    <!-- Quick Stats -->
-    <div class=\"grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4\">
-        <!-- Total Products -->
-        <div class=\"bg-white overflow-hidden shadow rounded-lg\">
-            <div class=\"p-5\">
-                <div class=\"flex items-center\">
-                    <div class=\"flex-shrink-0\">
-                        <svg class=\"h-6 w-6 text-blue-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                            <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4\"></path>
-                        </svg>
-                    </div>
-                    <div class=\"ml-5 w-0 flex-1\">
-                        <dl>
-                            <dt class=\"text-sm font-medium text-gray-500 truncate\">
-                                Toplam Ürün
-                            </dt>
-                            <dd class=\"text-lg font-medium text-gray-900\">
-                                {{ $dashboardData['products']['total'] }}
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class=\"bg-gray-50 px-5 py-3\">
-                <div class=\"text-sm\">
-                    <span class=\"text-green-600 font-medium\">{{ $dashboardData['products']['active'] }}</span>
-                    <span class=\"text-gray-500\">aktif</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Categories -->
-        <div class=\"bg-white overflow-hidden shadow rounded-lg\">
-            <div class=\"p-5\">
-                <div class=\"flex items-center\">
-                    <div class=\"flex-shrink-0\">
-                        <svg class=\"h-6 w-6 text-green-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                            <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10\"></path>
-                        </svg>
-                    </div>
-                    <div class=\"ml-5 w-0 flex-1\">
-                        <dl>
-                            <dt class=\"text-sm font-medium text-gray-500 truncate\">
-                                Kategoriler
-                            </dt>
-                            <dd class=\"text-lg font-medium text-gray-900\">
-                                {{ $dashboardData['categories'] }}
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class=\"bg-gray-50 px-5 py-3\">
-                <div class=\"text-sm\">
-                    <a href=\"{{ route('admin.categories.index') }}\" class=\"text-blue-600 hover:text-blue-500\">Yönet</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Brands -->
-        <div class=\"bg-white overflow-hidden shadow rounded-lg\">
-            <div class=\"p-5\">
-                <div class=\"flex items-center\">
-                    <div class=\"flex-shrink-0\">
-                        <svg class=\"h-6 w-6 text-purple-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                            <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z\"></path>
-                        </svg>
-                    </div>
-                    <div class=\"ml-5 w-0 flex-1\">
-                        <dl>
-                            <dt class=\"text-sm font-medium text-gray-500 truncate\">
-                                Markalar
-                            </dt>
-                            <dd class=\"text-lg font-medium text-gray-900\">
-                                {{ $dashboardData['brands'] }}
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class=\"bg-gray-50 px-5 py-3\">
-                <div class=\"text-sm\">
-                    <a href=\"{{ route('admin.brands.index') }}\" class=\"text-blue-600 hover:text-blue-500\">Yönet</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Alert -->
-        <div class=\"bg-white overflow-hidden shadow rounded-lg\">
-            <div class=\"p-5\">
-                <div class=\"flex items-center\">
-                    <div class=\"flex-shrink-0\">
-                        @if($dashboardData['out_of_stock_count'] > 0)
-                            <svg class=\"h-6 w-6 text-red-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                                <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z\"></path>
-                            </svg>
-                        @elseif($dashboardData['low_stock_count'] > 0)
-                            <svg class=\"h-6 w-6 text-yellow-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                                <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z\"></path>
-                            </svg>
-                        @else
-                            <svg class=\"h-6 w-6 text-green-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                                <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\"></path>
-                            </svg>
-                        @endif
-                    </div>
-                    <div class=\"ml-5 w-0 flex-1\">
-                        <dl>
-                            <dt class=\"text-sm font-medium text-gray-500 truncate\">
-                                Stok Durumu
-                            </dt>
-                            <dd class=\"text-lg font-medium text-gray-900\">
-                                @if($dashboardData['out_of_stock_count'] > 0)
-                                    <span class=\"text-red-600\">{{ $dashboardData['out_of_stock_count'] }} tükendi</span>
-                                @elseif($dashboardData['low_stock_count'] > 0)
-                                    <span class=\"text-yellow-600\">{{ $dashboardData['low_stock_count'] }} az stok</span>
-                                @else
-                                    <span class=\"text-green-600\">İyi durumda</span>
-                                @endif
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class=\"bg-gray-50 px-5 py-3\">
-                <div class=\"text-sm\">
-                    <a href=\"{{ route('admin.products.index', ['filter' => 'stock_issues']) }}\" class=\"text-blue-600 hover:text-blue-500\">Detaylar</a>
-                </div>
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-600">E-ticaret platformunuzun genel görünümü</p>
             </div>
         </div>
     </div>
 
-    <!-- Two Column Layout -->
-    <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\">
-        <!-- Stock Statistics Widget -->
-        <div class=\"lg:col-span-1\">
-            @include('admin.dashboard.stock-widget')
-        </div>
-
-        <!-- Recent Products -->
-        <div class=\"bg-white shadow rounded-lg\">
-            <div class=\"px-4 py-5 sm:p-6\">
-                <h3 class=\"text-lg leading-6 font-medium text-gray-900 mb-4\">
-                    Son Eklenen Ürünler
-                </h3>
-                
-                @if($dashboardData['recent_products']->count() > 0)
-                    <div class=\"space-y-4\">
-                        @foreach($dashboardData['recent_products'] as $product)
-                            <div class=\"flex items-center justify-between\">
-                                <div class=\"flex-1 min-w-0\">
-                                    <p class=\"text-sm font-medium text-gray-900 truncate\">
-                                        {{ $product->name }}
-                                    </p>
-                                    <p class=\"text-sm text-gray-500\">
-                                        {{ $product->category?->name }} • {{ $product->brand?->name }}
-                                    </p>
-                                    <p class=\"text-xs text-gray-400\">
-                                        {{ $product->created_at->diffForHumans() }}
-                                    </p>
-                                </div>
-                                <div class=\"flex items-center space-x-2\">
-                                    <span class=\"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        {{ $product->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}\">
-                                        {{ $product->is_active ? 'Aktif' : 'Pasif' }}
-                                    </span>
-                                    <a href=\"{{ route('admin.products.edit', $product) }}\" 
-                                       class=\"text-blue-600 hover:text-blue-500 text-sm\">
-                                        Düzenle
-                                    </a>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                    
-                    <div class=\"mt-6\">
-                        <a href=\"{{ route('admin.products.index') }}\" 
-                           class=\"w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50\">
-                            Tüm Ürünleri Görüntüle
-                        </a>
-                    </div>
-                @else
-                    <div class=\"text-center py-6\">
-                        <svg class=\"mx-auto h-12 w-12 text-gray-400\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                            <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4\"></path>
-                        </svg>
-                        <h3 class=\"mt-2 text-sm font-medium text-gray-900\">Henüz ürün yok</h3>
-                        <p class=\"mt-1 text-sm text-gray-500\">İlk ürününüzü ekleyerek başlayın.</p>
-                        <div class=\"mt-6\">
-                            <a href=\"{{ route('admin.products.create') }}\" 
-                               class=\"inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700\">
-                                <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                                    <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6v6m0 0v6m0-6h6m-6 0H6\"></path>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Today's Revenue -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                 </svg>
-                                Ürün Ekle
-                            </a>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Bugünkü Ciro</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="today-revenue">₺0,00</p>
+                            <div class="mt-2">
+                                <canvas id="revenue-sparkline" width="100" height="20" class="w-full h-5"></canvas>
+                            </div>
                         </div>
                     </div>
-                @endif
+                </div>
+            </div>
+
+            <!-- Today's Orders -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Bugünkü Sipariş</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="today-orders">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Carts -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m-2.4 0L2 2h1m6 11v2a1 1 0 102 0v-2m1.9 0h1.2a1 1 0 01.9 1.2L18 20H6L4.2 15.2c-.1-.3-.1-.8.2-1.2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Aktif Sepet</p>
+                            <div class="flex items-baseline">
+                                <span class="text-xl font-semibold text-gray-900" id="active-carts-count">0</span>
+                                <span class="ml-2 text-sm text-gray-500" id="active-carts-total">₺0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Alerts -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Stok Uyarıları</p>
+                            <div class="flex space-x-4">
+                                <div class="text-center">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800" id="low-stock-badge">0</span>
+                                    <div class="text-xs text-gray-500 mt-1">Az Stok</div>
+                                </div>
+                                <div class="text-center">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800" id="out-stock-badge">0</span>
+                                    <div class="text-xs text-gray-500 mt-1">Tükendi</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Quick Actions -->
-    <div class=\"bg-white shadow rounded-lg\">
-        <div class=\"px-4 py-5 sm:p-6\">
-            <h3 class=\"text-lg leading-6 font-medium text-gray-900 mb-4\">
-                Hızlı İşlemler
-            </h3>
-            
-            <div class=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4\">
-                <a href=\"{{ route('admin.products.create') }}\" 
-                   class=\"inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700\">
-                    <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6v6m0 0v6m0-6h6m-6 0H6\"></path>
-                    </svg>
-                    Yeni Ürün
-                </a>
-                
-                <a href=\"{{ route('admin.categories.create') }}\" 
-                   class=\"inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50\">
-                    <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10\"></path>
-                    </svg>
-                    Yeni Kategori
-                </a>
-                
-                <a href=\"{{ route('admin.brands.create') }}\" 
-                   class=\"inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50\">
-                    <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z\"></path>
-                    </svg>
-                    Yeni Marka
-                </a>
-                
-                <a href=\"{{ route('admin.cache.clear') }}\" 
-                   class=\"inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50\">
-                    <svg class=\"-ml-1 mr-2 h-5 w-5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">
-                        <path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15\"></path>
-                    </svg>
-                    Cache Temizle
-                </a>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Charts Section -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Sales Trend Chart -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Satış Trendi (Son 30 Gün)</h3>
+                        <p class="text-sm text-gray-600">Günlük ciro ve sipariş sayısı</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="relative h-80">
+                            <canvas id="sales-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Status Distribution -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Sipariş Durum Dağılımı</h3>
+                        <p class="text-sm text-gray-600">Son 30 güne ait sipariş durumları</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="relative h-64">
+                                <canvas id="order-status-chart"></canvas>
+                            </div>
+                            <div id="order-status-legend" class="space-y-2">
+                                <!-- Legend will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Products Table -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">En Çok Satan Ürünler</h3>
+                        <p class="text-sm text-gray-600">Son 30 güne ait top 10 ürün</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün Adı</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adet</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ciro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-products-table" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="space-y-6">
+                <!-- Cron Jobs Widget -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Cron İşleri</h3>
+                        <p class="text-sm text-gray-600">Sistem görevleri durumu</p>
+                    </div>
+                    <div class="p-6 space-y-6">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Son Çalışanlar</h4>
+                            <div id="cron-last-runs" class="space-y-2"></div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-900 mb-3">Sıradakiler</h4>
+                            <div id="cron-next-runs" class="space-y-2"></div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-red-900 mb-3">Hatalı İşler</h4>
+                            <div id="cron-failing" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Hızlı İşlemler</h3>
+                    </div>
+                    <div class="p-6 space-y-3">
+                        <a href="{{ route('admin.products.create') }}" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors block text-center">
+                            Yeni Ürün Ekle
+                        </a>
+                        <a href="{{ route('admin.categories.create') }}" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors block text-center">
+                            Kategori Ekle
+                        </a>
+                        <a href="{{ route('admin.brands.create') }}" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors block text-center">
+                            Marka Ekle
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+});
+
+function initializeDashboard() {
+    loadKPIs();
+    loadCharts();
+    loadCronStatus();
+}
+
+async function loadKPIs() {
+    try {
+        const response = await fetch('/api/admin/metrics/today-kpis');
+        const data = await response.json();
+        
+        document.getElementById('today-revenue').innerHTML = `₺${data.today_revenue.toLocaleString('tr-TR', {minimumFractionDigits: 2})}`;
+        document.getElementById('today-orders').innerHTML = data.today_orders.toLocaleString('tr-TR');
+        document.getElementById('active-carts-count').innerHTML = data.active_carts_count;
+        document.getElementById('active-carts-total').innerHTML = `₺${data.active_carts_total.toLocaleString('tr-TR', {minimumFractionDigits: 2})}`;
+        document.getElementById('low-stock-badge').innerHTML = data.low_stock_count;
+        document.getElementById('out-stock-badge').innerHTML = data.out_of_stock_count;
+    } catch (error) {
+        console.error('Error loading KPIs:', error);
+    }
+}
+
+async function loadCharts() {
+    await loadSalesTrend();
+    await loadOrderStatus();
+    await loadTopProducts();
+}
+
+async function loadSalesTrend() {
+    try {
+        const response = await fetch('/api/admin/metrics/sales-trend?days=30');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('sales-trend-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.series.map(item => item.date),
+                datasets: [{
+                    label: 'Ciro (₺)',
+                    data: data.series.map(item => item.revenue),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    } catch (error) {
+        console.error('Error loading sales trend:', error);
+    }
+}
+
+async function loadOrderStatus() {
+    try {
+        const response = await fetch('/api/admin/metrics/order-status?days=30');
+        const data = await response.json();
+        
+        const statusLabels = {
+            'pending': 'Ödeme Bekliyor',
+            'processing': 'Hazırlanıyor',
+            'shipped': 'Kargoda',
+            'delivered': 'Teslim Edildi'
+        };
+        
+        const ctx = document.getElementById('order-status-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.data.map(item => statusLabels[item.status] || item.status),
+                datasets: [{
+                    data: data.data.map(item => item.count),
+                    backgroundColor: ['#F59E0B', '#3B82F6', '#6366F1', '#10B981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    } catch (error) {
+        console.error('Error loading order status:', error);
+    }
+}
+
+async function loadTopProducts() {
+    try {
+        const response = await fetch('/api/admin/metrics/top-products?days=30&limit=10');
+        const data = await response.json();
+        
+        const tableBody = document.getElementById('top-products-table');
+        tableBody.innerHTML = data.data.map(product => `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.product}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.sku}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.units}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₺${product.revenue.toLocaleString('tr-TR', {minimumFractionDigits: 2})}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading top products:', error);
+    }
+}
+
+async function loadCronStatus() {
+    try {
+        const response = await fetch('/api/admin/metrics/cron-summary');
+        const data = await response.json();
+        
+        // Update cron sections
+        document.getElementById('cron-last-runs').innerHTML = data.last_runs.map(run => `
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span class="text-sm">${run.task}</span>
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">${run.status}</span>
+            </div>
+        `).join('');
+        
+        document.getElementById('cron-next-runs').innerHTML = data.next_runs.map(run => `
+            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span class="text-sm">${run.task}</span>
+                <span class="text-xs text-gray-500">${new Date(run.due_at).toLocaleString('tr-TR')}</span>
+            </div>
+        `).join('');
+        
+        document.getElementById('cron-failing').innerHTML = data.failing.map(fail => `
+            <div class="p-2 bg-red-50 rounded">
+                <div class="text-sm font-medium text-red-900">${fail.task}</div>
+                <div class="text-xs text-red-700">${fail.last_error}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading cron status:', error);
+    }
+}
+</script>
+@endpush
