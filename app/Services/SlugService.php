@@ -110,8 +110,8 @@ class SlugService
         }
 
         // Generate old and new paths based on entity type
-        $oldPath = static::generateEntityPath($entityType, $oldSlug, $model);
-        $newPath = static::generateEntityPath($entityType, $newSlug, $model);
+        $oldPath = static::generateEntityPath($entityType, $oldSlug, $model, true);
+        $newPath = static::generateEntityPath($entityType, $newSlug, $model, false);
 
         // Create rewrite record
         UrlRewrite::createRewrite(
@@ -119,19 +119,34 @@ class SlugService
             $model->id,
             $oldPath,
             $newPath,
-            301
+            301,
+            'slug_change'
         );
+        
+        // For categories, also handle child category path changes
+        if ($entityType === 'category' && method_exists($model, 'children')) {
+            static::handleCategoryChildrenPaths($model, $oldSlug, $newSlug);
+        }
     }
 
     /**
      * Generate full entity path for URLs
      */
-    protected static function generateEntityPath(string $entityType, string $slug, $model): string
+    protected static function generateEntityPath(string $entityType, string $slug, $model, bool $useOldSlug = false): string
     {
         switch ($entityType) {
             case 'category':
                 // For categories, use full parent path
-                return '/kategori/' . static::generateCategoryPath($model);
+                if ($useOldSlug) {
+                    // Temporarily set old slug to generate old path
+                    $originalSlug = $model->slug;
+                    $model->slug = $slug;
+                    $path = static::generateCategoryPath($model);
+                    $model->slug = $originalSlug;
+                    return '/kategori/' . $path;
+                } else {
+                    return '/kategori/' . static::generateCategoryPath($model);
+                }
             case 'brand':
                 return '/marka/' . $slug;
             case 'product':
@@ -139,6 +154,56 @@ class SlugService
             default:
                 return '/' . $slug;
         }
+    }
+    
+    /**
+     * Handle category children path changes when parent slug changes
+     */
+    protected static function handleCategoryChildrenPaths($category, string $oldParentSlug, string $newParentSlug): void
+    {
+        foreach ($category->children as $child) {
+            // Generate old and new paths for child
+            $oldChildPath = static::generateChildCategoryOldPath($child, $oldParentSlug);
+            $newChildPath = '/kategori/' . static::generateCategoryPath($child);
+            
+            // Create rewrite for child category
+            UrlRewrite::createRewrite(
+                'category',
+                $child->id,
+                $oldChildPath,
+                $newChildPath,
+                301,
+                'parent_slug_change'
+            );
+            
+            // Recursively handle grandchildren
+            if ($child->children->count() > 0) {
+                static::handleCategoryChildrenPaths($child, $oldParentSlug, $newParentSlug);
+            }
+        }
+    }
+    
+    /**
+     * Generate old path for child category when parent slug changes
+     */
+    protected static function generateChildCategoryOldPath($childCategory, string $oldParentSlug): string
+    {
+        $path = [];
+        $current = $childCategory;
+        
+        // Build path from current to root, using old parent slug
+        while ($current) {
+            if ($current->parent && $current->parent->slug === $current->parent->getOriginal('slug')) {
+                // This is the parent that changed, use old slug
+                array_unshift($path, $oldParentSlug);
+                $current = $current->parent->parent;
+            } else {
+                array_unshift($path, $current->slug);
+                $current = $current->parent;
+            }
+        }
+        
+        return '/kategori/' . implode('/', $path);
     }
 
     /**

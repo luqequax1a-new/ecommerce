@@ -37,7 +37,10 @@ class ImageService
         UploadedFile $file, 
         ?string $altText = null, 
         bool $isCover = false,
-        int $sortOrder = 0
+        int $sortOrder = 0,
+        array $variantIds = [],
+        string $imageType = 'product',
+        ?string $description = null
     ): ProductImage {
         // Dosya validasyonu
         $this->validateImageFile($file);
@@ -58,11 +61,15 @@ class ImageService
         // Veritabanına kaydet
         $productImage = ProductImage::create([
             'product_id' => $product->id,
+            'variant_ids' => !empty($variantIds) ? $variantIds : null,
             'original_filename' => $originalName,
             'path' => $originalPath,
             'alt_text' => $altText,
+            'description' => $description,
             'sort_order' => $sortOrder,
             'is_cover' => $isCover,
+            'is_variant_specific' => !empty($variantIds),
+            'image_type' => $imageType,
             'width' => $imageInfo['width'],
             'height' => $imageInfo['height'],
             'file_size' => $imageInfo['file_size'],
@@ -288,5 +295,249 @@ class ImageService
             \Log::error("Cover image update failed: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Bulk image upload with drag-drop support
+     */
+    public function bulkUploadImages(
+        Product $product,
+        array $files,
+        array $metadata = []
+    ): array {
+        $results = [];
+        $errors = [];
+        
+        foreach ($files as $index => $file) {
+            try {
+                $meta = $metadata[$index] ?? [];
+                
+                $image = $this->uploadProductImage(
+                    $product,
+                    $file,
+                    $meta['alt_text'] ?? null,
+                    $meta['is_cover'] ?? false,
+                    $meta['sort_order'] ?? $index,
+                    $meta['variant_ids'] ?? [],
+                    $meta['image_type'] ?? 'product',
+                    $meta['description'] ?? null
+                );
+                
+                $results[] = $image;
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'file' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+        
+        return [
+            'success' => $results,
+            'errors' => $errors,
+            'success_count' => count($results),
+            'error_count' => count($errors)
+        ];
+    }
+
+    /**
+     * Associate images with variants
+     */
+    public function associateImagesWithVariants(
+        array $imageIds,
+        array $variantIds,
+        bool $isVariantSpecific = true
+    ): bool {
+        try {
+            ProductImage::whereIn('id', $imageIds)
+                ->update([
+                    'variant_ids' => $variantIds,
+                    'is_variant_specific' => $isVariantSpecific
+                ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            \Log::error("Variant association failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get images for specific variant
+     */
+    public function getVariantImages(Product $product, ?int $variantId = null): array
+    {
+        $query = ProductImage::where('product_id', $product->id)
+            ->ordered();
+            
+        if ($variantId) {
+            $query->forVariant($variantId);
+        }
+        
+        return $query->get()->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => $image->url,
+                'thumbnail' => $image->getResizedUrl('thumbnail'),
+                'medium' => $image->getResizedUrl('medium'),
+                'alt_text' => $image->alt_text,
+                'description' => $image->description,
+                'is_cover' => $image->is_cover,
+                'is_variant_specific' => $image->is_variant_specific,
+                'variant_ids' => $image->variant_ids,
+                'dimensions' => $image->dimensions,
+                'file_size' => $image->human_file_size,
+                'sort_order' => $image->sort_order
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Update image metadata
+     */
+    public function updateImageMetadata(
+        ProductImage $image,
+        array $metadata
+    ): bool {
+        try {
+            $allowedFields = [
+                'alt_text', 'description', 'sort_order',
+                'is_cover', 'variant_ids', 'is_variant_specific', 'image_type'
+            ];
+            
+            $updateData = array_intersect_key($metadata, array_flip($allowedFields));
+            
+            // Handle cover image logic
+            if (isset($updateData['is_cover']) && $updateData['is_cover']) {
+                $this->unsetOtherCoverImages($image->product, $image->id);
+            }
+            
+            $image->update($updateData);
+            
+            return true;
+        } catch (\Exception $e) {
+            \Log::error("Image metadata update failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Bulk delete images
+     */
+    public function bulkDeleteImages(array $imageIds): array
+    {
+        $results = [];
+        $errors = [];
+        
+        foreach ($imageIds as $imageId) {
+            try {
+                $image = ProductImage::find($imageId);
+                if ($image && $this->deleteProductImage($image)) {
+                    $results[] = $imageId;
+                } else {
+                    $errors[] = "Image {$imageId} not found or deletion failed";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Error deleting image {$imageId}: " . $e->getMessage();
+            }
+        }
+        
+        return [
+            'deleted' => $results,
+            'errors' => $errors,
+            'success_count' => count($results),
+            'error_count' => count($errors)
+        ];
+    }
+
+    /**
+     * Get image gallery statistics
+     */
+    public function getGalleryStatistics(Product $product): array
+    {
+        $images = $product->images;
+        
+        return [
+            'total_images' => $images->count(),
+            'cover_images' => $images->where('is_cover', true)->count(),
+            'variant_specific_images' => $images->where('is_variant_specific', true)->count(),
+            'general_images' => $images->where('is_variant_specific', false)->count(),
+            'total_file_size' => $images->sum('file_size'),
+            'total_file_size_mb' => round($images->sum('file_size') / 1024 / 1024, 2),
+            'image_types' => $images->groupBy('image_type')->map->count()->toArray(),
+            'images_with_alt_text' => $images->whereNotNull('alt_text')->count(),
+            'images_with_description' => $images->whereNotNull('description')->count()
+        ];
+    }
+
+    /**
+     * Optimize images (compress and regenerate)
+     */
+    public function optimizeProductImages(Product $product): array
+    {
+        $results = [];
+        
+        foreach ($product->images as $image) {
+            try {
+                // Regenerate with optimized quality
+                $generated = $this->generateResizeProfiles($image->path, 80); // Lower quality for optimization
+                $results[$image->id] = [
+                    'success' => true,
+                    'generated' => $generated,
+                    'original_size' => $image->file_size,
+                    'optimized' => true
+                ];
+            } catch (\Exception $e) {
+                $results[$image->id] = [
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Enhanced resize profile generation with quality control
+     */
+    public function generateResizeProfiles(string $originalPath, int $quality = 85): array
+    {
+        $generatedFiles = [];
+        $fullPath = Storage::disk('public')->path($originalPath);
+        
+        if (!file_exists($fullPath)) {
+            throw new \Exception("Original file not found: {$fullPath}");
+        }
+
+        $pathInfo = pathinfo($originalPath);
+        
+        foreach (self::RESIZE_PROFILES as $sizeName => $config) {
+            [$width, $height, $crop] = $config;
+            
+            try {
+                $resizedPath = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '_' . $sizeName . '.' . $pathInfo['extension'];
+                $resizedFullPath = Storage::disk('public')->path($resizedPath);
+                
+                $image = $this->imageManager->read($fullPath);
+                
+                if ($crop) {
+                    // Crop ve resize
+                    $image->cover($width, $height);
+                } else {
+                    // Proportional resize
+                    $image->scale(width: $width, height: $height);
+                }
+                
+                // Kaliteyi ayarla
+                $image->save($resizedFullPath, quality: $quality);
+                
+                $generatedFiles[$sizeName] = $resizedPath;
+            } catch (\Exception $e) {
+                \Log::error("Resize failed for {$sizeName}: " . $e->getMessage());
+            }
+        }
+        
+        return $generatedFiles;
     }
 }

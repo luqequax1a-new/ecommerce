@@ -1,213 +1,347 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Product: ' . $product->name)
+@section('title', 'Ürün Düzenle: ' . $product->name)
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Edit Product: {{ $product->name }}</h1>
-        <div class="mt-2">
-            <a href="{{ route('admin.products.index') }}" class="text-blue-600 hover:text-blue-800">← Back to Products</a>
+<div class="container-fluid px-4 py-6">
+    {{-- Header --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Ürün Düzenle: {{ $product->name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.products.index') }}">Ürünler</a></li>
+                    <li class="breadcrumb-item active">{{ $product->name }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Geri Dön
+            </a>
+            <a href="{{ route('product.show', $product->slug) }}" target="_blank" class="btn btn-outline-info">
+                <i class="fas fa-external-link-alt me-1"></i>Önizle
+            </a>
         </div>
     </div>
 
-    <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    {{-- Success/Error Messages --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h6><i class="fas fa-exclamation-triangle me-2"></i>Lütfen aşağıdaki hataları düzeltin:</h6>
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data" id="product-form">
         @csrf
         @method('PUT')
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Basic Information -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                            <input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            @error('name')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">URL Slug</label>
-                            <input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                            @error('slug')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea id="description" name="description" rows="4" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('description', $product->description) }}</textarea>
-                        @error('description')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                <!-- SEO Information -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">SEO Settings</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
-                            <input type="text" id="meta_title" name="meta_title" value="{{ old('meta_title', $product->meta_title) }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   maxlength="60">
-                            <p class="text-xs text-gray-500 mt-1">Leave empty to use product name</p>
-                        </div>
-
-                        <div>
-                            <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
-                            <textarea id="meta_description" name="meta_description" rows="3" 
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                      maxlength="160">{{ old('meta_description', $product->meta_description) }}</textarea>
-                            <p class="text-xs text-gray-500 mt-1">Leave empty to use description excerpt</p>
-                        </div>
-
-                        <div>
-                            <label for="meta_keywords" class="block text-sm font-medium text-gray-700 mb-1">Meta Keywords</label>
-                            <input type="text" id="meta_keywords" name="meta_keywords" value="{{ old('meta_keywords', $product->meta_keywords) }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   placeholder="keyword1, keyword2, keyword3">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Existing Images -->
-                @if($product->images->count() > 0)
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Current Images</h2>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="existing-images">
-                        @foreach($product->images as $image)
-                            <div class="relative group" data-image-id="{{ $image->id }}">
-                                <img src="{{ $image->medium_url }}" alt="{{ $image->alt_text }}" 
-                                     class="w-full aspect-square object-cover rounded-lg border">
-                                
-                                <!-- Image Controls -->
-                                <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
-                                    <button type="button" onclick="setCoverImage({{ $image->id }})" 
-                                            class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 {{ $image->is_cover ? 'bg-green-600' : '' }}">
-                                        {{ $image->is_cover ? 'Cover' : 'Set Cover' }}
-                                    </button>
-                                    <button type="button" onclick="deleteImage({{ $image->id }})" 
-                                            class="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700">
-                                        Delete
-                                    </button>
-                                </div>
-                                
-                                <!-- Alt Text Input -->
-                                <input type="text" name="image_alts[{{ $image->id }}]" value="{{ $image->alt_text }}" 
-                                       placeholder="Alt text" 
-                                       class="mt-2 w-full px-2 py-1 text-xs border border-gray-300 rounded">
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-
-                <!-- Upload New Images -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Add New Images</h2>
-                    
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors" id="image-upload-area">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <div class="mt-4">
-                            <label for="images" class="cursor-pointer">
-                                <span class="mt-2 block text-sm font-medium text-gray-900">
-                                    Click to upload images or drag and drop
-                                </span>
-                                <span class="mt-1 block text-xs text-gray-500">
-                                    PNG, JPG, GIF up to 10MB each
-                                </span>
-                                <input id="images" name="images[]" type="file" class="sr-only" multiple accept="image/*">
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Image Preview Area -->
-                    <div id="image-previews" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-                </div>
+        {{-- PrestaShop Style Tabs --}}
+        <div class="card">
+            <div class="card-header p-0">
+                <ul class="nav nav-tabs card-header-tabs" id="product-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                            <i class="fas fa-info-circle me-2"></i>Genel Bilgiler
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab">
+                            <i class="fas fa-search me-2"></i>SEO & URL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images" type="button" role="tab">
+                            <i class="fas fa-images me-2"></i>Görseller
+                            <span class="badge bg-info ms-1">{{ $product->images->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="variants-tab" data-bs-toggle="tab" data-bs-target="#variants" type="button" role="tab">
+                            <i class="fas fa-layer-group me-2"></i>Varyantlar
+                            <span class="badge bg-secondary ms-1">{{ $product->variants->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="associations-tab" data-bs-toggle="tab" data-bs-target="#associations" type="button" role="tab">
+                            <i class="fas fa-link me-2"></i>İlişkiler
+                        </button>
+                    </li>
+                </ul>
             </div>
 
-            <!-- Sidebar -->
-            <div class="space-y-6">
-                <!-- Status & Categories -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }} 
-                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <span class="ml-2 text-sm text-gray-700">Active</span>
-                            </label>
-                        </div>
+            <div class="card-body">
+                <div class="tab-content" id="product-tab-content">
+                    {{-- General Tab --}}
+                    <div class="tab-pane fade show active" id="general" role="tabpanel">
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-edit text-primary me-2"></i>Temel Bilgiler</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="name" class="form-label required">Ürün Adı</label>
+                                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                                           id="name" name="name" value="{{ old('name', $product->name) }}" 
+                                                           maxlength="255" required>
+                                                    @error('name')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                    <div class="form-text">Ürününüzün müşterilere gösterilecek adı</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="sku" class="form-label">SKU (Stok Kodu)</label>
+                                                    <input type="text" class="form-control @error('sku') is-invalid @enderror" 
+                                                           id="sku" name="sku" value="{{ old('sku', $product->sku) }}" 
+                                                           maxlength="100">
+                                                    @error('sku')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                    <div class="form-text">Benzersiz ürün kodu (boş bırakılırsa otomatik oluşturulur)</div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        <div>
-                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                            <select id="category_id" name="category_id" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Select Category</option>
-                                @foreach(\App\Models\Category::all() as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                                        <div class="mb-3">
+                                            <label for="description" class="form-label">Açıklama</label>
+                                            <textarea class="form-control @error('description') is-invalid @enderror" 
+                                                      id="description" name="description" rows="5">{{ old('description', $product->description) }}</textarea>
+                                            @error('description')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Ürünün detaylı açıklaması</div>
+                                        </div>
 
-                        <div>
-                            <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                            <select id="brand_id" name="brand_id" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Select Brand</option>
-                                @foreach(\App\Models\Brand::all() as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
-                                        {{ $brand->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="short_description" class="form-label">Kısa Açıklama</label>
+                                                    <textarea class="form-control @error('short_description') is-invalid @enderror" 
+                                                              id="short_description" name="short_description" rows="3" 
+                                                              maxlength="500">{{ old('short_description', $product->short_description) }}</textarea>
+                                                    @error('short_description')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                    <div class="form-text">Ürün listelerinde gösterilecek kısa açıklama</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="product_type" class="form-label">Ürün Türü</label>
+                                                    <select class="form-select @error('product_type') is-invalid @enderror" 
+                                                            id="product_type" name="product_type">
+                                                        <option value="simple" {{ old('product_type', $product->product_type) == 'simple' ? 'selected' : '' }}>Basit Ürün</option>
+                                                        <option value="variable" {{ old('product_type', $product->product_type) == 'variable' ? 'selected' : '' }}>Varyantlı Ürün</option>
+                                                    </select>
+                                                    @error('product_type')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                    <div class="form-text">Ürünün türünü belirler (basit veya varyantlı)</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                {{-- Settings Card --}}
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-cog text-primary me-2"></i>Ayarlar</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                                       value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="is_active">
+                                                    <span class="fw-semibold">Aktif</span>
+                                                    <div class="text-muted small">Ürün sitede gösterilsin mi?</div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" 
+                                                       value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="is_featured">
+                                                    <span class="fw-semibold">Öne Çıkan</span>
+                                                    <div class="text-muted small">Ana sayfada öne çıkarılsın mı?</div>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="category_id" class="form-label">Kategori</label>
+                                            <select class="form-select @error('category_id') is-invalid @enderror" 
+                                                    id="category_id" name="category_id">
+                                                <option value="">Kategori Seçin</option>
+                                                @foreach($categories as $category)
+                                                    <option value="{{ $category->id }}" 
+                                                            {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                                        {{ str_repeat('— ', $category->depth ?? 0) }}{{ $category->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('category_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="brand_id" class="form-label">Marka</label>
+                                            <select class="form-select @error('brand_id') is-invalid @enderror" 
+                                                    id="brand_id" name="brand_id">
+                                                <option value="">Marka Seçin</option>
+                                                @foreach($brands as $brand)
+                                                    <option value="{{ $brand->id }}" 
+                                                            {{ old('brand_id', $product->brand_id) == $brand->id ? 'selected' : '' }}>
+                                                        {{ $brand->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('brand_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="sort_order" class="form-label">Sıralama</label>
+                                            <input type="number" class="form-control @error('sort_order') is-invalid @enderror" 
+                                                   id="sort_order" name="sort_order" 
+                                                   value="{{ old('sort_order', $product->sort_order ?? 0) }}" 
+                                                   min="0" max="9999">
+                                            @error('sort_order')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Listeleme sırası (düşük numara önce gelir)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Quick Actions --}}
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-bolt text-warning me-2"></i>Hızlı İşlemler</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary" id="save-product-btn">
+                                                <i class="fas fa-save me-1"></i>Değişiklikleri Kaydet
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" onclick="duplicateProduct()">
+                                                <i class="fas fa-copy me-1"></i>Ürünü Kopyala
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="deleteProduct()">
+                                                <i class="fas fa-trash me-1"></i>Ürünü Sil
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
-                    
-                    <div class="space-y-3">
-                        <button type="submit" 
-                                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
-                            Update Product
-                        </button>
-                        
-                        <a href="{{ route('product.show', $product->slug) }}" target="_blank"
-                           class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors text-center block">
-                            View Frontend
-                        </a>
-                        
-                        <a href="{{ route('admin.products.show', $product) }}"
-                           class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors text-center block">
-                            View Details
-                        </a>
-                    </div>
+                    {{-- SEO Tab --}}
+                    @include('admin.products.partials.seo-tab')
+
+                    {{-- Images Tab --}}
+                    @include('admin.products.partials.images-tab')
+
+                    {{-- Variants Tab --}}
+                    @include('admin.products.partials.variants-tab')
+
+                    {{-- Associations Tab --}}
+                    @include('admin.products.partials.associations-tab')
                 </div>
             </div>
         </div>
     </form>
+</div>
+
+<script>
+function duplicateProduct() {
+    if (confirm('Bu ürünün kopyasını oluşturmak istediğinizden emin misiniz?')) {
+        window.location.href = '/admin/products/{{ $product->id }}/duplicate';
+    }
+}
+
+function deleteProduct() {
+    if (confirm('Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/products/{{ $product->id }}';
+        form.innerHTML = `
+            @csrf
+            @method('DELETE')
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Auto-save draft functionality
+let autoSaveTimeout;
+function scheduleAutoSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(function() {
+        saveDraft();
+    }, 30000); // Auto-save every 30 seconds
+}
+
+function saveDraft() {
+    const formData = new FormData(document.getElementById('product-form'));
+    
+    fetch('/admin/products/{{ $product->id }}/save-draft', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Draft saved automatically');
+        }
+    })
+    .catch(error => {
+        console.error('Auto-save error:', error);
+    });
+}
+
+// Listen for form changes to trigger auto-save
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('product-form');
+    const inputs = form.querySelectorAll('input, textarea, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('input', scheduleAutoSave);
+        input.addEventListener('change', scheduleAutoSave);
+    });
+});
+</script>
+
+@endsection
 </div>
 
 @push('scripts')

@@ -1,0 +1,1 @@
+'Input: \"šcretsiz Kargo!\" - \"' . \$slugService::generate('šcretsiz Kargo!') . '\"' . PHP_EOL;

@@ -47,6 +47,30 @@ class Brand extends Model
         return 'brand';
     }
     /**
+     * Scope for active brands
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for featured brands
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope for ordered brands
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
      * Products ilişkisi
      */
     public function products(): HasMany
@@ -88,22 +112,6 @@ class Brand extends Model
     public function getMetaDescriptionAttribute($value): ?string
     {
         return $value ?: $this->description;
-    }
-
-    /**
-     * Scope: Sadece aktif markalar
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope: Sıralı markalar
-     */
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('sort_order')->orderBy('name');
     }
 
     /**

@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
         
+        // Add URL Rewrite middleware to web group (should be last to catch 404s)
+        $middleware->web(append: [
+            \App\Http\Middleware\UrlRewriteMiddleware::class,
+        ]);
+        
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);

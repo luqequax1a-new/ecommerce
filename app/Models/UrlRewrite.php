@@ -16,10 +16,14 @@ class UrlRewrite extends Model
         'new_path',
         'status_code',
         'is_active',
+        'hit_count',
+        'last_accessed_at',
+        'redirect_reason',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'last_accessed_at' => 'datetime',
     ];
 
     /**
@@ -40,7 +44,8 @@ class UrlRewrite extends Model
         int $entityId,
         string $oldPath,
         string $newPath,
-        int $statusCode = 301
+        int $statusCode = 301,
+        string $reason = 'slug_change'
     ): self {
         return self::create([
             'entity_type' => $entityType,
@@ -49,6 +54,7 @@ class UrlRewrite extends Model
             'new_path' => $newPath,
             'status_code' => $statusCode,
             'is_active' => true,
+            'redirect_reason' => $reason,
         ]);
     }
 

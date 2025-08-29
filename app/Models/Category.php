@@ -110,6 +110,30 @@ class Category extends Model
     }
 
     /**
+     * Scope for active categories
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for featured categories
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('featured', true);
+    }
+
+    /**
+     * Scope for ordered categories
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
      * Parent category ilişkisi
      */
     public function parent(): BelongsTo
@@ -244,54 +268,6 @@ class Category extends Model
         }
         
         return $breadcrumb;
-    }
-
-    /**
-     * Scope: Sadece aktif kategoriler
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope: Menüde gösterilen kategoriler
-     */
-    public function scopeInMenu($query)
-    {
-        return $query->where('show_in_menu', true);
-    }
-
-    /**
-     * Scope: Footer'da gösterilen kategoriler
-     */
-    public function scopeInFooter($query)
-    {
-        return $query->where('show_in_footer', true);
-    }
-
-    /**
-     * Scope: Öne çıkan kategoriler
-     */
-    public function scopeFeatured($query)
-    {
-        return $query->where('featured', true);
-    }
-
-    /**
-     * Scope: Ana kategoriler (parent_id null)
-     */
-    public function scopeRoots($query)
-    {
-        return $query->whereNull('parent_id');
-    }
-
-    /**
-     * Scope: Sıralı kategoriler
-     */
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('sort_order')->orderBy('name');
     }
 
     /**

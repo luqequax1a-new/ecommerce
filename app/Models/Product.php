@@ -7,13 +7,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Services\StockHelper;
 use App\Services\TaxCalculationService;
+use App\Traits\HasSEO;
+use App\Services\SlugService;
 
 class Product extends Model
 {
+    use HasSEO;
+    
     protected $fillable = [
         'name',
         'slug',
         'description',
+        'short_description',
         'category_id',
         'brand_id',
         'unit_id',
@@ -24,19 +29,41 @@ class Product extends Model
         'compare_price',
         'cost_price',
         'sku',
+        'weight',
+        'attributes',
+        'featured',
+        'sort_order',
         'is_active',
         'meta_title',
         'meta_description',
-        'meta_keywords'
+        'meta_keywords',
+        'canonical_url',
+        'robots',
+        'schema_markup',
+        'auto_update_slug'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'featured' => 'boolean',
+        'auto_update_slug' => 'boolean',
         'stock_quantity' => 'decimal:3',
         'price' => 'decimal:2',
         'compare_price' => 'decimal:2',
-        'cost_price' => 'decimal:2'
+        'cost_price' => 'decimal:2',
+        'weight' => 'decimal:3',
+        'sort_order' => 'integer',
+        'attributes' => 'array',
+        'schema_markup' => 'array'
     ];
+
+    /**
+     * Override SEO trait methods for product-specific behavior
+     */
+    public function getSEOEntityType(): string
+    {
+        return 'product';
+    }
 
     /**
      * Category ilişkisi
@@ -68,6 +95,30 @@ class Product extends Model
     public function taxClass(): BelongsTo
     {
         return $this->belongsTo(TaxClass::class);
+    }
+
+    /**
+     * Scope for active products
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for featured products
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope for products on sale
+     */
+    public function scopeOnSale($query)
+    {
+        return $query->where('is_on_sale', true);
     }
 
     /**
@@ -278,11 +329,11 @@ class Product extends Model
     }
 
     /**
-     * Scope: Aktif ürünler
+     * Scope: Sıralı ürünler
      */
-    public function scopeActive($query)
+    public function scopeOrdered($query)
     {
-        return $query->where('is_active', true);
+        return $query->orderBy('sort_order')->orderBy('name');
     }
 
     /**

@@ -6,19 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ProductImage;
+use App\Models\Category;
+use App\Models\Brand;
 use App\Models\Unit;
 use App\Services\ImageService;
+use App\Services\SlugService;
+use App\Services\ProductVariantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
     protected ImageService $imageService;
+    protected ProductVariantService $variantService;
 
-    public function __construct(ImageService $imageService)
+    public function __construct(ImageService $imageService, ProductVariantService $variantService)
     {
         $this->imageService = $imageService;
+        $this->variantService = $variantService;
     }
 
     /**
@@ -258,10 +268,19 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load(['variants.unit', 'orderedImages']);
+        $product->load(['variants.unit', 'orderedImages', 'category', 'brand']);
         $units = Unit::orderBy('display_name')->get();
+        $categories = Category::active()->ordered()->get();
+        $brands = Brand::active()->ordered()->get();
         
-        return view('admin.products.edit', compact('product', 'units'));
+        // SEO Analysis
+        $seoAnalysis = [
+            'title_optimal' => $product->meta_title && strlen($product->meta_title) >= 30 && strlen($product->meta_title) <= 60,
+            'description_optimal' => $product->meta_description && strlen($product->meta_description) >= 120 && strlen($product->meta_description) <= 160,
+            'slug_optimal' => $product->slug && strlen($product->slug) <= 50,
+        ];
+        
+        return view('admin.products.edit', compact('product', 'units', 'categories', 'brands', 'seoAnalysis'));
     }
 
     /**
@@ -394,5 +413,333 @@ class ProductController extends Controller
         
         return redirect()->back()->with('success', 
             "Görsel yeniden oluşturma tamamlandı. {$successCount}/{$totalCount} başarılı.");
+    }
+
+    /**
+     * Generate slug for product
+     */
+    public function generateSlug(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'exclude_id' => 'nullable|integer'
+        ]);
+
+        $slug = SlugService::generateUnique(
+            $request->name,
+            Product::class,
+            $request->exclude_id
+        );
+
+        return response()->json(['slug' => $slug]);
+    }
+
+    /**
+     * Generate variant combinations for a product
+     */
+    public function generateVariantCombinations(Request $request, Product $product)
+    {
+        $request->validate([
+            'attributes' => 'required|array|min:1',
+            'attributes.*' => 'integer|exists:product_attributes,id'
+        ]);
+
+        $combinations = $this->variantService->generateVariantCombinations(
+            $product,
+            $request->attributes
+        );
+
+        return response()->json([
+            'success' => true,
+            'combinations' => $combinations,
+            'count' => count($combinations)
+        ]);
+    }
+
+    /**
+     * Create variants from combinations
+     */
+    public function createVariants(Request $request, Product $product)
+    {
+        $request->validate([
+            'combinations' => 'required|array|min:1',
+            'combinations.*.sku' => 'required|string|max:100',
+            'combinations.*.price' => 'required|numeric|min:0',
+            'combinations.*.stock_quantity' => 'required|numeric|min:0',
+            'combinations.*.attributes' => 'required|array'
+        ]);
+
+        $result = $this->variantService->createVariantsFromCombinations(
+            $product,
+            $request->combinations
+        );
+
+        if ($result['error_count'] > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı varyantlar oluşturulamadı.',
+                'errors' => $result['errors'],
+                'created_count' => $result['success_count']
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$result['success_count']} varyant başarıyla oluşturuldu.",
+            'created_count' => $result['success_count']
+        ]);
+    }
+
+    /**
+     * Update multiple variants
+     */
+    public function updateVariants(Request $request, Product $product)
+    {
+        $request->validate([
+            'variants' => 'required|array|min:1',
+            'variants.*.id' => 'required|integer|exists:product_variants,id',
+            'variants.*.sku' => 'required|string|max:100',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.stock_quantity' => 'required|numeric|min:0'
+        ]);
+
+        // Prepare update data
+        $variantUpdates = [];
+        foreach ($request->variants as $variantData) {
+            $variantUpdates[$variantData['id']] = [
+                'sku' => $variantData['sku'],
+                'price' => $variantData['price'],
+                'stock_quantity' => $variantData['stock_quantity']
+            ];
+        }
+
+        $result = $this->variantService->updateVariants($product, $variantUpdates);
+
+        if ($result['error_count'] > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı varyantlar güncellenemedi.',
+                'errors' => $result['errors'],
+                'updated_count' => $result['success_count']
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$result['success_count']} varyant başarıyla güncellendi.",
+            'updated_count' => $result['success_count']
+        ]);
+    }
+
+    /**
+     * Delete variants
+     */
+    public function deleteVariants(Request $request, Product $product)
+    {
+        $request->validate([
+            'variant_ids' => 'required|array|min:1',
+            'variant_ids.*' => 'integer|exists:product_variants,id'
+        ]);
+
+        $result = $this->variantService->deleteVariants($product, $request->variant_ids);
+
+        if ($result['error_count'] > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı varyantlar silinemedi.',
+                'errors' => $result['errors'],
+                'deleted_count' => $result['success_count']
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$result['success_count']} varyant başarıyla silindi.",
+            'deleted_count' => $result['success_count']
+        ]);
+    }
+
+    /**
+     * Get available attributes for variant creation
+     */
+    public function getAvailableAttributes()
+    {
+        $attributes = $this->variantService->getAvailableAttributes();
+
+        return response()->json(
+            $attributes->map(function ($attribute) {
+                return [
+                    'id' => $attribute->id,
+                    'name' => $attribute->name,
+                    'type' => $attribute->type,
+                    'values' => $attribute->activeValues->map(function ($value) {
+                        return [
+                            'id' => $value->id,
+                            'value' => $value->value,
+                            'color_code' => $value->color_code,
+                            'image_url' => $value->image_url
+                        ];
+                    })
+                ];
+            })
+        );
+    }
+
+    /**
+     * Get variant statistics for a product
+     */
+    public function getVariantStatistics(Product $product)
+    {
+        $statistics = $this->variantService->getVariantStatistics($product);
+
+        return response()->json($statistics);
+    }
+
+    /**
+     * Bulk upload images for product
+     */
+    public function bulkUploadImages(Request $request, Product $product)
+    {
+        $request->validate([
+            'images' => 'required|array|min:1|max:20',
+            'images.*' => 'image|mimes:jpeg,png,gif,webp|max:10240',
+            'metadata' => 'nullable|array',
+            'metadata.*.alt_text' => 'nullable|string|max:255',
+            'metadata.*.description' => 'nullable|string|max:1000',
+            'metadata.*.variant_ids' => 'nullable|array',
+            'metadata.*.variant_ids.*' => 'integer|exists:product_variants,id',
+            'metadata.*.image_type' => 'nullable|in:product,variant,gallery'
+        ]);
+
+        $result = $this->imageService->bulkUploadImages(
+            $product,
+            $request->file('images'),
+            $request->input('metadata', [])
+        );
+
+        if ($result['error_count'] > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı görseller yüklenemedi.',
+                'errors' => $result['errors'],
+                'uploaded_count' => $result['success_count']
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$result['success_count']} görsel başarıyla yüklendi.",
+            'uploaded_count' => $result['success_count'],
+            'images' => $result['success']
+        ]);
+    }
+
+    /**
+     * Get product gallery images
+     */
+    public function getGalleryImages(Request $request, Product $product)
+    {
+        $variantId = $request->input('variant_id');
+        $images = $this->imageService->getVariantImages($product, $variantId);
+
+        return response()->json([
+            'success' => true,
+            'images' => $images,
+            'statistics' => $this->imageService->getGalleryStatistics($product)
+        ]);
+    }
+
+    /**
+     * Update image metadata
+     */
+    public function updateImageMetadata(Request $request, Product $product, ProductImage $image)
+    {
+        $request->validate([
+            'alt_text' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_cover' => 'boolean',
+            'variant_ids' => 'nullable|array',
+            'variant_ids.*' => 'integer|exists:product_variants,id',
+            'is_variant_specific' => 'boolean',
+            'image_type' => 'nullable|in:product,variant,gallery'
+        ]);
+
+        $success = $this->imageService->updateImageMetadata($image, $request->all());
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success ? 'Görsel bilgileri güncellendi.' : 'Güncelleme başarısız.'
+        ]);
+    }
+
+    /**
+     * Associate images with variants
+     */
+    public function associateImagesWithVariants(Request $request, Product $product)
+    {
+        $request->validate([
+            'image_ids' => 'required|array|min:1',
+            'image_ids.*' => 'integer|exists:product_images,id',
+            'variant_ids' => 'required|array|min:1',
+            'variant_ids.*' => 'integer|exists:product_variants,id',
+            'is_variant_specific' => 'boolean'
+        ]);
+
+        $success = $this->imageService->associateImagesWithVariants(
+            $request->image_ids,
+            $request->variant_ids,
+            $request->boolean('is_variant_specific', true)
+        );
+
+        return response()->json([
+            'success' => $success,
+            'message' => $success ? 'Görsel-varyant ilişkilendirmesi tamamlandı.' : 'İlişkilendirme başarısız.'
+        ]);
+    }
+
+    /**
+     * Bulk delete images
+     */
+    public function bulkDeleteImages(Request $request, Product $product)
+    {
+        $request->validate([
+            'image_ids' => 'required|array|min:1',
+            'image_ids.*' => 'integer|exists:product_images,id'
+        ]);
+
+        $result = $this->imageService->bulkDeleteImages($request->image_ids);
+
+        if ($result['error_count'] > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bazı görseller silinemedi.',
+                'errors' => $result['errors'],
+                'deleted_count' => $result['success_count']
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$result['success_count']} görsel başarıyla silindi.",
+            'deleted_count' => $result['success_count']
+        ]);
+    }
+
+    /**
+     * Optimize product images
+     */
+    public function optimizeImages(Product $product)
+    {
+        $results = $this->imageService->optimizeProductImages($product);
+        
+        $successCount = count(array_filter($results, fn($r) => $r['success']));
+        $totalCount = count($results);
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Görsel optimizasyonu tamamlandı. {$successCount}/{$totalCount} başarılı.",
+            'results' => $results
+        ]);
     }
 }
