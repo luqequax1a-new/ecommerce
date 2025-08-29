@@ -45,6 +45,7 @@
                     </a>
                 </div>
                 
+<<<<<<< HEAD
                 <!-- Admin Navigation - Now points to Angular SPA -->
                 <nav class="flex space-x-6">
                     <a href="/admin/dashboard" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
@@ -60,6 +61,24 @@
                         Brands
                     </a>
                     <a href="/admin/settings" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+=======
+                <!-- Admin Navigation -->
+                <nav class="flex space-x-6">
+                    <a href="{{ route('admin.products.index') }}" 
+                       class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('admin.products.*') ? 'bg-gray-100 text-gray-900' : '' }}">
+                        Products
+                    </a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        Categories
+                    </a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        Brands
+                    </a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        SEO
+                    </a>
+                    <a href="#" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+>>>>>>> b9ef7a106c85f4e575e20fb861fb3efd00ba1495
                         Settings
                     </a>
                 </nav>
