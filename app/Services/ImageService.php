@@ -90,7 +90,7 @@ class ImageService
     /**
      * Tüm resize profillerini oluştur
      */
-    public function generateResizeProfiles(string $originalPath): array
+    public function generateResizeProfiles(string $originalPath, int $quality = 85): array
     {
         $generatedFiles = [];
         $fullPath = Storage::disk('public')->path($originalPath);
@@ -119,7 +119,7 @@ class ImageService
                 }
                 
                 // Kaliteyi ayarla (JPEG için)
-                $image->save($resizedFullPath, quality: 85);
+                $image->save($resizedFullPath, quality: $quality);
                 
                 $generatedFiles[$sizeName] = $resizedPath;
             } catch (\Exception $e) {
@@ -471,6 +471,27 @@ class ImageService
     }
 
     /**
+     * Clone image - NO-OP implementation by policy
+     * Policy: cloned products must have ZERO images.
+     * 
+     * @param ProductImage $image Source image (ignored)
+     * @param Product $target Target product (ignored)
+     * @return null Always returns null - no image cloning allowed
+     */
+    public function cloneImage(ProductImage $image, Product $target): ?string
+    {
+        // Policy: cloned products must have ZERO images.
+        // No file copying, no DB records, no storage operations.
+        \Log::warning('cloneImage ignored by policy', [
+            'source_image_id' => $image->id,
+            'target_product_id' => $target->id,
+            'policy' => 'cloned_products_zero_images'
+        ]);
+        
+        return null;
+    }
+
+    /**
      * Optimize images (compress and regenerate)
      */
     public function optimizeProductImages(Product $product): array
@@ -496,48 +517,5 @@ class ImageService
         }
         
         return $results;
-    }
-
-    /**
-     * Enhanced resize profile generation with quality control
-     */
-    public function generateResizeProfiles(string $originalPath, int $quality = 85): array
-    {
-        $generatedFiles = [];
-        $fullPath = Storage::disk('public')->path($originalPath);
-        
-        if (!file_exists($fullPath)) {
-            throw new \Exception("Original file not found: {$fullPath}");
-        }
-
-        $pathInfo = pathinfo($originalPath);
-        
-        foreach (self::RESIZE_PROFILES as $sizeName => $config) {
-            [$width, $height, $crop] = $config;
-            
-            try {
-                $resizedPath = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '_' . $sizeName . '.' . $pathInfo['extension'];
-                $resizedFullPath = Storage::disk('public')->path($resizedPath);
-                
-                $image = $this->imageManager->read($fullPath);
-                
-                if ($crop) {
-                    // Crop ve resize
-                    $image->cover($width, $height);
-                } else {
-                    // Proportional resize
-                    $image->scale(width: $width, height: $height);
-                }
-                
-                // Kaliteyi ayarla
-                $image->save($resizedFullPath, quality: $quality);
-                
-                $generatedFiles[$sizeName] = $resizedPath;
-            } catch (\Exception $e) {
-                \Log::error("Resize failed for {$sizeName}: " . $e->getMessage());
-            }
-        }
-        
-        return $generatedFiles;
     }
 }

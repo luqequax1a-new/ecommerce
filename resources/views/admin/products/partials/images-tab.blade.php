@@ -53,14 +53,14 @@
                                                     title="Düzenle">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-warning" 
-                                                    onclick="setCoverImage({{ $image->id }})"
+                                            <button type="button" class="btn btn-sm btn-warning set-cover-btn" 
+                                                    data-image-id="{{ $image->id }}"
                                                     title="Ana Görsel Yap"
                                                     @if($image->is_cover) disabled @endif>
                                                 <i class="fas fa-star"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    onclick="deleteImage({{ $image->id }})"
+                                            <button type="button" class="btn btn-sm btn-danger delete-image-btn" 
+                                                    data-image-id="{{ $image->id }}"
                                                     title="Sil">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -75,7 +75,7 @@
                                     {{-- Badges --}}
                                     <div class="image-badges position-absolute bottom-0 start-0 m-2">
                                         @if($image->is_cover)
-                                            <span class="badge bg-warning text-dark">
+                                            <span class="badge bg-warning text-dark cover-badge">
                                                 <i class="fas fa-star me-1"></i>Ana Görsel
                                             </span>
                                         @endif
@@ -89,6 +89,12 @@
                                         <span class="badge bg-secondary">
                                             {{ number_format($image->file_size / 1024, 1) }}KB
                                         </span>
+                                    </div>
+                                    
+                                    {{-- Checkbox for selection --}}
+                                    <div class="image-checkbox-container position-absolute top-0 start-0 m-2">
+                                        <input type="checkbox" class="form-check-input image-checkbox" 
+                                               data-image-id="{{ $image->id }}">
                                     </div>
                                 </div>
                                 
@@ -113,6 +119,28 @@
                             </div>
                         </div>
                     @endforelse
+                </div>
+            </div>
+            
+            {{-- Bulk Actions --}}
+            <div class="bulk-actions-toolbar mt-3 p-3 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <input type="checkbox" id="select-all-images" class="form-check-input me-2">
+                        <label for="select-all-images" class="form-check-label">Tümünü Seç</label>
+                        <span class="selection-count ms-2 text-muted">0 görsel seçildi</span>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-danger btn-sm bulk-action-btn" id="bulk-delete-btn" disabled>
+                            <i class="fas fa-trash me-1"></i>Sil
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm bulk-action-btn" id="bulk-cover-btn" disabled>
+                            <i class="fas fa-star me-1"></i>Ana Görsel Yap
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm bulk-action-btn" id="bulk-variant-btn" disabled>
+                            <i class="fas fa-layer-group me-1"></i>Varyantlara Ata
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -262,6 +290,58 @@
     </div>
 </div>
 
+{{-- Variant Assignment Modal --}}
+<div class="modal fade" id="variant-assignment-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Varyant Ataması</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Varyantları Seçin</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="is-variant-specific-modal">
+                        <label class="form-check-label" for="is-variant-specific-modal">
+                            Sadece belirli varyantlar için
+                        </label>
+                    </div>
+                    
+                    @if($product->variants->count() > 0)
+                        <div class="variant-checkboxes" style="max-height: 200px; overflow-y: auto;">
+                            @foreach($product->variants as $variant)
+                                <div class="form-check">
+                                    <input class="form-check-input variant-checkbox" 
+                                           type="checkbox" 
+                                           value="{{ $variant->id }}"
+                                           id="modal-variant-{{ $variant->id }}">
+                                    <label class="form-check-label" for="modal-variant-{{ $variant->id }}">
+                                        {{ $variant->sku }} 
+                                        @if($variant->attributes)
+                                            <small class="text-muted">
+                                                ({{ collect($variant->attributes)->map(fn($v, $k) => "$k: $v")->join(', ') }})
+                                            </small>
+                                        @endif
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <small class="text-warning">Henüz varyant oluşturulmamış</small>
+                    @endif
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="save-variant-assignment">
+                    <i class="fas fa-save me-1"></i>Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .image-item {
     transition: transform 0.2s ease;
@@ -321,16 +401,64 @@
     padding: 10px;
     background-color: #f8f9fa;
 }
+
+.image-checkbox-container {
+    z-index: 10;
+}
+
+.image-item.selected {
+    box-shadow: 0 0 0 3px #007bff;
+}
+
+.image-manager-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    padding: 12px 20px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.image-manager-notification.success {
+    background-color: #28a745;
+}
+
+.image-manager-notification.error {
+    background-color: #dc3545;
+}
+
+.image-manager-notification.warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.image-manager-notification.info {
+    background-color: #17a2b8;
+}
 </style>
 
 <script>
+// Initialize ProductImageManager when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize drag and drop functionality
+    // Initialize the enhanced image manager
+    if (typeof ProductImageManager !== 'undefined') {
+        window.productImageManager = new ProductImageManager({
+            container: '#images',
+            productId: {{ $product->id }},
+            apiEndpoint: '/admin/products'
+        });
+    }
+    
+    // Initialize existing functionality for backward compatibility
     initializeImageGallery();
     initializeUploadArea();
     initializeBulkUpload();
 });
 
+// Keep existing functions for backward compatibility
 function initializeImageGallery() {
     // Make gallery sortable
     const gallery = document.getElementById('image-gallery-container');

@@ -1,0 +1,508 @@
+/**
+ * Product Clone Styles - No Images Policy
+ * 
+ * Features:
+ * - Clone button styling
+ * - Progress indicators
+ * - Success notifications
+ * - Policy warnings
+ * - Turkish design patterns
+ */
+
+/* ==================== CLONE BUTTONS ==================== */
+
+[data-clone-product] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+[data-clone-product]:before {
+    content: \"📋\";
+    font-size: 10px;
+}
+
+[data-clone-product]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+[data-clone-product]:disabled,
+[data-clone-product].cloning {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    animation: pulse 1.5s infinite;
+}
+
+[data-clone-product].cloning:before {
+    content: \"⟳\";
+    animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== NOTIFICATIONS ==================== */
+
+.clone-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease;
+    max-width: 400px;
+    min-width: 250px;
+}
+
+.clone-notification.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.clone-notification.error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.clone-notification.warning {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fed7aa;
+}
+
+.clone-notification.info {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* ==================== SUCCESS NOTIFICATION ==================== */
+
+.clone-success-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.4s ease;
+    max-width: 400px;
+    min-width: 300px;
+    border: 1px solid #e5e7eb;
+}
+
+.clone-success-content {
+    padding: 16px 20px;
+}
+
+.clone-success-content h4 {
+    margin: 0 0 8px 0;
+    color: #16a34a;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clone-success-content p {
+    margin: 4px 0;
+    color: #374151;
+    font-size: 14px;
+}
+
+.clone-success-content .policy-note {
+    background: #fef3c7;
+    color: #d97706;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin: 12px 0;
+    border: 1px solid #fed7aa;
+}
+
+.clone-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.clone-actions .btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.clone-actions .btn-primary {
+    background: #3b82f6;
+    color: white;
+    border: 1px solid #3b82f6;
+}
+
+.clone-actions .btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+/* ==================== CLONE DIALOG (Future Enhancement) ==================== */
+
+.clone-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.clone-dialog-content {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+.clone-dialog h3 {
+    margin: 0 0 16px 0;
+    color: #374151;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.clone-dialog h3:before {
+    content: \"📋\";
+    font-size: 16px;
+}
+
+.clone-policy-warning {
+    background: #fef3c7;
+    color: #d97706;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border: 1px solid #fed7aa;
+    font-size: 14px;
+}
+
+.clone-policy-warning:before {
+    content: \"⚠️ \";
+    margin-right: 8px;
+}
+
+.clone-stats {
+    background: #f8fafc;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.clone-stats-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+}
+
+.clone-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.clone-dialog .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid;
+}
+
+.clone-dialog .btn-cancel {
+    background: white;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.clone-dialog .btn-cancel:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.clone-dialog .btn-confirm {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.clone-dialog .btn-confirm:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ==================== PRODUCT LISTING INTEGRATION ==================== */
+
+.products-table .clone-column {
+    width: 80px;
+    text-align: center;
+}
+
+.product-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-actions .quick-action {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.product-actions .edit-action {
+    background: #10b981;
+    color: white;
+}
+
+.product-actions .edit-action:hover {
+    background: #059669;
+}
+
+/* ==================== INFO BANNERS ==================== */
+
+.clone-info-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border: 1px solid #fed7aa;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.clone-info-banner:before {
+    content: \"📷\";
+    font-size: 20px;
+    opacity: 0.8;
+}
+
+.clone-info-banner .banner-content {
+    flex: 1;
+}
+
+.clone-info-banner .banner-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.clone-info-banner .banner-text {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 768px) {
+    .clone-notification,
+    .clone-success-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .clone-dialog-content {
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+    
+    .product-actions {
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    [data-clone-product] {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .clone-dialog-content {
+        padding: 16px;
+    }
+    
+    .clone-dialog-actions {
+        flex-direction: column;
+    }
+    
+    .clone-actions {
+        justify-content: center;
+    }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+[data-clone-product]:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.clone-dialog .btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Screen reader only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    [data-clone-product] {
+        border: 2px solid;
+    }
+    
+    .clone-notification {
+        border: 2px solid;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    [data-clone-product],
+    .clone-notification,
+    .clone-success-notification,
+    .clone-dialog {
+        transition: none;
+        animation: none;
+    }
+    
+    [data-clone-product].cloning:before {
+        animation: none;
+    }
+}
+
+/* ==================== DARK MODE SUPPORT ==================== */
+
+@media (prefers-color-scheme: dark) {
+    .clone-success-notification {
+        background: #374151;
+        color: #f9fafb;
+        border-color: #4b5563;
+    }
+    
+    .clone-dialog-content {
+        background: #374151;
+        color: #f9fafb;
+    }
+    
+    .clone-stats {
+        background: #4b5563;
+        color: #d1d5db;
+    }
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+    [data-clone-product],
+    .clone-notification,
+    .clone-success-notification,
+    .clone-dialog {
+        display: none !important;
+    }
+}

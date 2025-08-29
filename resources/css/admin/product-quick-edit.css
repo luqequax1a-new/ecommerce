@@ -1,0 +1,528 @@
+/**
+ * PrestaShop-style Quick Edit Styles
+ * 
+ * Features:
+ * - Inline editing with visual feedback
+ * - Bulk actions bar
+ * - Turkish design patterns
+ * - Accessibility support
+ * - Mobile responsive
+ */
+
+/* ==================== QUICK EDIT FIELDS ==================== */
+
+.quick-editable {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    position: relative;
+    min-height: 24px;
+    display: inline-block;
+    min-width: 60px;
+}
+
+.quick-editable:hover {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.quick-editable:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    background-color: #eff6ff;
+}
+
+.quick-editable.editing {
+    background-color: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    padding: 2px;
+}
+
+.quick-editable.just-updated {
+    background-color: #dcfce7;
+    border-color: #22c55e;
+    animation: quickEditSuccess 0.5s ease;
+}
+
+@keyframes quickEditSuccess {
+    0% {
+        background-color: #dcfce7;
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+
+/* ==================== INPUT STYLES ==================== */
+
+.quick-edit-input,
+.quick-edit-select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    background-color: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.quick-edit-input:focus,
+.quick-edit-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.quick-edit-input[type=\"number\"] {
+    text-align: right;
+}
+
+.quick-edit-select {
+    cursor: pointer;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 5\"><path fill=\"%23666\" d=\"M2 0L0 2h4zm0 5L0 3h4z\"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px;
+    padding-right: 24px;
+    appearance: none;
+}
+
+/* ==================== LOADING INDICATOR ==================== */
+
+.quick-edit-loading {
+    display: inline-block;
+    margin-left: 8px;
+    color: #6b7280;
+    font-size: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== FIELD TYPE SPECIFIC ==================== */
+
+.quick-editable[data-quick-edit=\"is_active\"] {
+    font-weight: 600;
+}
+
+.quick-editable[data-quick-edit=\"is_active\"][data-value=\"1\"] {
+    color: #22c55e;
+}
+
+.quick-editable[data-quick-edit=\"is_active\"][data-value=\"0\"] {
+    color: #ef4444;
+}
+
+.quick-editable[data-quick-edit=\"featured\"][data-value=\"1\"] {
+    color: #f59e0b;
+}
+
+.quick-editable[data-quick-edit=\"featured\"][data-value=\"1\"]:before {
+    content: \"★ \";
+}
+
+.quick-editable[data-quick-edit=\"featured\"][data-value=\"0\"]:before {
+    content: \"☆ \";
+    color: #9ca3af;
+}
+
+.quick-editable[data-quick-edit=\"price\"]:before {
+    content: \"₺\";
+    color: #6b7280;
+    margin-right: 2px;
+}
+
+.quick-editable[data-quick-edit=\"stock_quantity\"] {
+    text-align: right;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* ==================== BULK ACTIONS BAR ==================== */
+
+.bulk-actions-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bulk-actions-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.selected-count {
+    font-weight: 600;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bulk-action-btn {
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.bulk-action-btn:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.bulk-action-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.bulk-category-select,
+.bulk-brand-select {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-width: 150px;
+    z-index: 10;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-price-adjustment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.price-percentage {
+    width: 60px;
+    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    font-size: 12px;
+}
+
+/* ==================== NOTIFICATIONS ==================== */
+
+.quick-edit-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease;
+    max-width: 400px;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.quick-edit-notification.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.quick-edit-notification.error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.quick-edit-notification.warning {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fed7aa;
+}
+
+.quick-edit-notification.info {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* ==================== TABLE ENHANCEMENTS ==================== */
+
+.products-table {
+    position: relative;
+}
+
+.products-table th,
+.products-table td {
+    vertical-align: middle;
+}
+
+.products-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.products-table .checkbox-column {
+    width: 40px;
+    text-align: center;
+}
+
+.products-table .product-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.products-table .product-row.selected {
+    background-color: #eff6ff;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+@media (max-width: 768px) {
+    .bulk-actions-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .bulk-actions {
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .bulk-action-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+    
+    .bulk-price-adjustment {
+        justify-content: center;
+    }
+    
+    .quick-edit-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .quick-editable {
+        min-width: 50px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .bulk-actions-bar {
+        padding: 8px 12px;
+    }
+    
+    .bulk-action-btn {
+        padding: 6px 4px;
+        font-size: 11px;
+    }
+    
+    .selected-count {
+        font-size: 12px;
+        padding: 2px 8px;
+    }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+.quick-editable:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.bulk-action-btn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .quick-editable {
+        border: 2px solid;
+    }
+    
+    .quick-editable:hover {
+        background-color: #000;
+        color: #fff;
+    }
+    
+    .bulk-actions-bar {
+        background: #000;
+        color: #fff;
+        border: 2px solid #fff;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .quick-editable,
+    .bulk-action-btn,
+    .quick-edit-notification {
+        transition: none;
+        animation: none;
+    }
+    
+    .quick-edit-loading {
+        animation: none;
+    }
+}
+
+/* ==================== DARK MODE SUPPORT ==================== */
+
+@media (prefers-color-scheme: dark) {
+    .quick-editable {
+        background-color: #374151;
+        color: #f9fafb;
+        border-color: #4b5563;
+    }
+    
+    .quick-editable:hover {
+        background-color: #4b5563;
+        border-color: #6b7280;
+    }
+    
+    .quick-edit-input,
+    .quick-edit-select {
+        background-color: #374151;
+        color: #f9fafb;
+        border-color: #4b5563;
+    }
+    
+    .quick-edit-notification.success {
+        background: #064e3b;
+        color: #a7f3d0;
+    }
+    
+    .quick-edit-notification.error {
+        background: #7f1d1d;
+        color: #fecaca;
+    }
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+    .bulk-actions-bar,
+    .quick-edit-notification {
+        display: none !important;
+    }
+    
+    .quick-editable {
+        border: none;
+        background: transparent;
+        cursor: default;
+    }
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.quick-edit-disabled {
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.quick-edit-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.font-mono {
+    font-family: 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

@@ -12,6 +12,9 @@ use App\Models\Unit;
 use App\Services\ImageService;
 use App\Services\SlugService;
 use App\Services\ProductVariantService;
+use App\Http\Requests\QuickEditProductRequest;
+use App\Http\Requests\CreateProductVariantsRequest;
+use App\Http\Requests\UpdateProductVariantsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -195,10 +198,22 @@ class ProductController extends Controller
         $combinations = $this->generateCombinations($attributeValues);
         
         foreach ($combinations as $index => $combination) {
-            // Create SKU from combination
-            $sku = $product->slug . '-' . ($index + 1);
+            // Generate SKU
+            $baseSku = $product->slug;
+            $attributeSlugs = [];
             
-            // Make sure SKU is unique
+            foreach ($combination as $attributeId => $valueId) {
+                $attribute = \App\Models\ProductAttribute::find($attributeId);
+                $value = \App\Models\ProductAttributeValue::find($valueId);
+                
+                if ($attribute && $value) {
+                    $attributeSlugs[] = Str::slug($value->value);
+                }
+            }
+            
+            $sku = $baseSku . '-' . implode('-', $attributeSlugs);
+            
+            // Handle SKU collision
             $originalSku = $sku;
             $counter = 1;
             while (ProductVariant::where('sku', $sku)->exists()) {
@@ -206,52 +221,39 @@ class ProductController extends Controller
                 $counter++;
             }
             
-            // Create variant with default values
+            // Create variant
             ProductVariant::create([
                 'product_id' => $product->id,
                 'sku' => $sku,
-                'price' => 0, // Admin will set this later
-                'stock_quantity' => 0, // Admin will set this later
+                'price' => 0, // Will be set by admin
+                'stock_quantity' => 0, // Will be set by admin
                 'attributes' => $combination,
             ]);
         }
     }
     
     /**
-     * Generate all possible attribute combinations
+     * Generate all possible combinations from attribute values
      */
-    private function generateCombinations(array $attributeValues)
+    private function generateCombinations(array $attributeValues, array $current = [], array &$result = []): array
     {
-        $combinations = [];
+        if (empty($attributeValues)) {
+            $result[] = $current;
+            return $result;
+        }
+        
         $keys = array_keys($attributeValues);
-        
-        if (empty($keys)) {
-            return [];
-        }
-        
-        // Start with first attribute
         $firstKey = $keys[0];
-        foreach ($attributeValues[$firstKey] as $value) {
-            $combinations[] = [$firstKey => $value];
+        $firstValues = $attributeValues[$firstKey];
+        $remaining = array_slice($attributeValues, 1, null, true);
+        
+        foreach ($firstValues as $value) {
+            $newCurrent = $current;
+            $newCurrent[$firstKey] = $value;
+            $this->generateCombinations($remaining, $newCurrent, $result);
         }
         
-        // Add other attributes
-        for ($i = 1; $i < count($keys); $i++) {
-            $newCombinations = [];
-            $currentKey = $keys[$i];
-            
-            foreach ($combinations as $combination) {
-                foreach ($attributeValues[$currentKey] as $value) {
-                    $newCombination = $combination;
-                    $newCombination[$currentKey] = $value;
-                    $newCombinations[] = $newCombination;
-                }
-            }
-            
-            $combinations = $newCombinations;
-        }
-        
-        return $combinations;
+        return $result;
     }
 
     /**
@@ -259,7 +261,6 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $product->load(['variants.unit', 'orderedImages']);
         return view('admin.products.show', compact('product'));
     }
 
@@ -268,19 +269,12 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load(['variants.unit', 'orderedImages', 'category', 'brand']);
+        $product->load(['images', 'variants.attributeValues.attribute', 'category', 'brand', 'unit']);
         $units = Unit::orderBy('display_name')->get();
-        $categories = Category::active()->ordered()->get();
-        $brands = Brand::active()->ordered()->get();
+        $categories = Category::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
         
-        // SEO Analysis
-        $seoAnalysis = [
-            'title_optimal' => $product->meta_title && strlen($product->meta_title) >= 30 && strlen($product->meta_title) <= 60,
-            'description_optimal' => $product->meta_description && strlen($product->meta_description) >= 120 && strlen($product->meta_description) <= 160,
-            'slug_optimal' => $product->slug && strlen($product->slug) <= 50,
-        ];
-        
-        return view('admin.products.edit', compact('product', 'units', 'categories', 'brands', 'seoAnalysis'));
+        return view('admin.products.edit', compact('product', 'units', 'categories', 'brands'));
     }
 
     /**
@@ -288,20 +282,28 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('products')->ignore($product->id)],
+            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
             'description' => 'nullable|string',
+            'short_description' => 'nullable|string',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'unit_id' => 'required|exists:units,id',
+            'product_type' => 'required|in:simple,variable',
             'is_active' => 'boolean',
+            'featured' => 'boolean',
+            'weight' => 'nullable|numeric|min:0',
             
-            // Yeni görseller
-            'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,gif,webp|max:10240',
-            'image_alt_texts' => 'nullable|array',
-            'image_alt_texts.*' => 'nullable|string|max:255',
-        ]);
+            // SEO fields
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
+        ];
         
-        // Slug güncelle
+        $request->validate($rules);
+        
+        // Generate slug if not provided
         $slug = $request->slug ?: Str::slug($request->name);
         if ($slug !== $product->slug) {
             $originalSlug = $slug;
@@ -313,31 +315,23 @@ class ProductController extends Controller
             }
         }
         
-        // Ürünü güncelle
+        // Update product
         $product->update([
             'name' => $request->name,
             'slug' => $slug,
             'description' => $request->description,
-            'is_active' => $request->boolean('is_active', true)
+            'short_description' => $request->short_description,
+            'category_id' => $request->category_id,
+            'brand_id' => $request->brand_id,
+            'unit_id' => $request->unit_id,
+            'product_type' => $request->product_type,
+            'weight' => $request->weight,
+            'is_active' => $request->boolean('is_active'),
+            'featured' => $request->boolean('featured'),
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
+            'meta_keywords' => $request->meta_keywords,
         ]);
-        
-        // Yeni görselleri yükle
-        if ($request->hasFile('images')) {
-            $currentImageCount = $product->images()->count();
-            
-            foreach ($request->file('images') as $index => $file) {
-                $altText = $request->image_alt_texts[$index] ?? null;
-                $sortOrder = $currentImageCount + $index;
-                
-                $this->imageService->uploadProductImage(
-                    $product, 
-                    $file, 
-                    $altText, 
-                    false, // Yeni eklenen görseller cover olmaz
-                    $sortOrder
-                );
-            }
-        }
         
         return redirect()->route('admin.products.edit', $product)
             ->with('success', 'Ürün başarıyla güncellendi.');
@@ -348,43 +342,130 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        // Önce tüm görselleri sil
+        // Delete associated images
         foreach ($product->images as $image) {
             $this->imageService->deleteProductImage($image);
         }
         
-        // Ürünü sil (varyantlar cascade ile silinecek)
+        // Delete variants
+        $product->variants()->delete();
+        
+        // Delete product
         $product->delete();
         
         return redirect()->route('admin.products.index')
             ->with('success', 'Ürün başarıyla silindi.');
     }
-    
+
     /**
-     * Tek bir görseli sil
+     * Clone a product
+     */
+    public function clone(Product $product)
+    {
+        // Create new product with cloned data
+        $newProduct = $product->replicate();
+        
+        // Generate unique name and slug
+        $originalName = $product->name;
+        $counter = 1;
+        $newName = $originalName . ' (Kopya)';
+        
+        while (Product::where('name', $newName)->exists()) {
+            $newName = $originalName . ' (Kopya ' . $counter . ')';
+            $counter++;
+        }
+        
+        $newProduct->name = $newName;
+        
+        // Generate unique slug
+        $originalSlug = $product->slug;
+        $counter = 1;
+        $newSlug = $originalSlug . '-kopya';
+        
+        while (Product::where('slug', $newSlug)->exists()) {
+            $newSlug = $originalSlug . '-kopya-' . $counter;
+            $counter++;
+        }
+        
+        $newProduct->slug = $newSlug;
+        
+        // Reset other fields
+        $newProduct->is_active = false; // Cloned products are inactive by default
+        $newProduct->featured = false;
+        
+        $newProduct->save();
+        
+        // Clone variants (without images)
+        foreach ($product->variants as $variant) {
+            $newVariant = $variant->replicate();
+            $newVariant->product_id = $newProduct->id;
+            
+            // Generate unique SKU
+            $originalSku = $variant->sku;
+            $counter = 1;
+            $newSku = $originalSku . '-COPY';
+            
+            while (ProductVariant::where('sku', $newSku)->exists()) {
+                $newSku = $originalSku . '-COPY-' . $counter;
+                $counter++;
+            }
+            
+            $newVariant->sku = $newSku;
+            $newVariant->save();
+        }
+        
+        // NOTE: Images are NOT cloned per policy
+        // This is intentional - cloned products must have ZERO images
+        
+        return redirect()->route('admin.products.edit', $newProduct)
+            ->with('success', 'Ürün başarıyla kopyalandı. Lütfen yeni ürün bilgilerini gözden geçirin.');
+    }
+
+    /**
+     * Get clone information for UI
+     */
+    public function getCloneInfo(Product $product)
+    {
+        return response()->json([
+            'success' => true,
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'variant_count' => $product->variants->count(),
+                'image_count' => $product->images->count()
+            ]
+        ]);
+    }
+
+    /**
+     * Delete a product image
      */
     public function deleteImage(ProductImage $image)
     {
-        $this->imageService->deleteProductImage($image);
+        $success = $this->imageService->deleteProductImage($image);
         
-        return response()->json(['success' => true, 'message' => 'Görsel başarıyla silindi.']);
+        return response()->json([
+            'success' => $success,
+            'message' => $success ? 'Görsel başarıyla silindi.' : 'Silme işlemi başarısız.'
+        ]);
     }
-    
+
     /**
-     * Cover image'ı değiştir
+     * Set image as cover
      */
     public function setCoverImage(ProductImage $image)
     {
         $success = $this->imageService->setCoverImage($image);
         
         return response()->json([
-            'success' => $success, 
-            'message' => $success ? 'Ana görsel başarıyla değiştirildi.' : 'Hata oluştu.'
+            'success' => $success,
+            'message' => $success ? 'Ana görsel olarak ayarlandı.' : 'İşlem başarısız.'
         ]);
     }
-    
+
     /**
-     * Görsel sırasını güncelle
+     * Update image order
      */
     public function updateImageOrder(Request $request)
     {
@@ -402,7 +483,7 @@ class ProductController extends Controller
     }
     
     /**
-     * Görselleri yeniden oluştur (Prestashop tarzı)
+     * Regenerate images for a specific product
      */
     public function regenerateImages(Product $product)
     {
@@ -413,6 +494,25 @@ class ProductController extends Controller
         
         return redirect()->back()->with('success', 
             "Görsel yeniden oluşturma tamamlandı. {$successCount}/{$totalCount} başarılı.");
+    }
+    
+    /**
+     * Regenerate images for all products (bulk operation)
+     */
+    public function regenerateAllImages()
+    {
+        $results = $this->imageService->regenerateAllImages();
+        
+        $totalProducts = count($results);
+        $successfulProducts = count(array_filter($results, function($productResults) {
+            return !empty(array_filter($productResults, fn($r) => $r['success']));
+        }));
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Tüm ürün görselleri yeniden oluşturuldu. {$successfulProducts}/{$totalProducts} ürün başarılı.",
+            'results' => $results
+        ]);
     }
 
     /**
@@ -741,5 +841,236 @@ class ProductController extends Controller
             'message' => "Görsel optimizasyonu tamamlandı. {$successCount}/{$totalCount} başarılı.",
             'results' => $results
         ]);
+    }
+
+    // ==================== QUICK EDIT FUNCTIONALITY ====================
+
+    /**
+     * Quick update product fields (PrestaShop-style inline editing)
+     */
+    public function quickUpdate(QuickEditProductRequest $request, Product $product)
+    {
+        $formattedData = $request->getFormattedData();
+        $field = $formattedData['field'];
+        $value = $formattedData['value'];
+
+        try {
+            // Special handling for certain fields
+            if ($field === 'slug') {
+                $value = $this->ensureUniqueSlug($value, $product->id);
+            }
+
+            // Update the product
+            $product->update([$field => $value]);
+
+            // Get formatted display value
+            $displayValue = $this->getDisplayValue($product, $field);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ürün başarıyla güncellendi.',
+                'value' => $value,
+                'display_value' => $displayValue,
+                'field' => $field
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Quick update error', [
+                'product_id' => $product->id,
+                'field' => $field,
+                'value' => $value,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Güncelleme sırasında hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk update multiple products
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'integer|exists:products,id',
+            'action' => 'required|string|in:activate,deactivate,delete,move_category,assign_brand,adjust_price,copy_seo_title,regenerate_slug',
+            'value' => 'nullable|string'
+        ]);
+
+        $productIds = $request->product_ids;
+        $action = $request->action;
+        $value = $request->value;
+
+        try {
+            $updatedCount = 0;
+            $deletedCount = 0;
+
+            switch ($action) {
+                case 'activate':
+                    Product::whereIn('id', $productIds)->update(['is_active' => true]);
+                    $updatedCount = count($productIds);
+                    break;
+
+                case 'deactivate':
+                    Product::whereIn('id', $productIds)->update(['is_active' => false]);
+                    $updatedCount = count($productIds);
+                    break;
+
+                case 'delete':
+                    $products = Product::whereIn('id', $productIds)->get();
+                    foreach ($products as $product) {
+                        // Delete associated images
+                        foreach ($product->images as $image) {
+                            $this->imageService->deleteProductImage($image);
+                        }
+                        
+                        // Delete variants
+                        $product->variants()->delete();
+                        
+                        // Delete product
+                        $product->delete();
+                        $deletedCount++;
+                    }
+                    break;
+
+                case 'move_category':
+                    if ($value) {
+                        Product::whereIn('id', $productIds)->update(['category_id' => $value]);
+                        $updatedCount = count($productIds);
+                    }
+                    break;
+
+                case 'assign_brand':
+                    Product::whereIn('id', $productIds)->update(['brand_id' => $value ?: null]);
+                    $updatedCount = count($productIds);
+                    break;
+
+                case 'adjust_price':
+                    if ($value && preg_match('/^([+-])(\d+)%?$/', $value, $matches)) {
+                        $operator = $matches[1];
+                        $amount = (float)$matches[2];
+                        
+                        foreach (ProductVariant::whereIn('product_id', $productIds)->get() as $variant) {
+                            $currentPrice = $variant->price;
+                            $newPrice = $operator === '+' 
+                                ? $currentPrice * (1 + $amount / 100)
+                                : $currentPrice * (1 - $amount / 100);
+                            
+                            $variant->update(['price' => round($newPrice, 2)]);
+                            $updatedCount++;
+                        }
+                    }
+                    break;
+
+                case 'copy_seo_title':
+                    $products = Product::whereIn('id', $productIds)->get();
+                    foreach ($products as $product) {
+                        $product->update(['meta_title' => $product->name]);
+                        $updatedCount++;
+                    }
+                    break;
+
+                case 'regenerate_slug':
+                    $products = Product::whereIn('id', $productIds)->get();
+                    foreach ($products as $product) {
+                        $slug = SlugService::generateUnique($product->name, Product::class, $product->id);
+                        $product->update(['slug' => $slug]);
+                        $updatedCount++;
+                    }
+                    break;
+            }
+
+            $message = '';
+            if ($updatedCount > 0) {
+                $message = "{$updatedCount} ürün başarıyla güncellendi.";
+            }
+            if ($deletedCount > 0) {
+                $message = "{$deletedCount} ürün başarıyla silindi.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'updated_count' => $updatedCount,
+                'deleted_count' => $deletedCount
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Bulk update error', [
+                'action' => $action,
+                'product_ids' => $productIds,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Toplu güncelleme sırasında hata oluştu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get options for quick edit dropdowns
+     */
+    public function getQuickEditOptions()
+    {
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+        $brands = Brand::orderBy('name')->get(['id', 'name']);
+
+        return response()->json([
+            'categories' => $categories,
+            'brands' => $brands
+        ]);
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    /**
+     * Ensure slug is unique
+     */
+    private function ensureUniqueSlug(string $slug, int $excludeId = null): string
+    {
+        $originalSlug = $slug;
+        $counter = 1;
+        
+        $query = Product::where('slug', $slug);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+        
+        while ($query->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+            
+            $query = Product::where('slug', $slug);
+            if ($excludeId) {
+                $query->where('id', '!=', $excludeId);
+            }
+        }
+        
+        return $slug;
+    }
+
+    /**
+     * Get formatted display value for a field
+     */
+    private function getDisplayValue(Product $product, string $field)
+    {
+        switch ($field) {
+            case 'is_active':
+                return $product->$field ? 'Aktif' : 'Pasif';
+            case 'featured':
+                return $product->$field ? 'Öne Çıkan' : 'Normal';
+            case 'category_id':
+                return $product->category ? $product->category->name : 'Kategori Yok';
+            case 'brand_id':
+                return $product->brand ? $product->brand->name : 'Marka Yok';
+            default:
+                return $product->$field;
+        }
     }
 }

@@ -19,42 +19,97 @@ class SEOController extends Controller
     }
 
     /**
-     * Generate SEO preview for any entity
+     * Generate SEO preview for any entity with live analysis
+     * POST /admin/seo/preview (JSON)
      */
     public function preview(Request $request)
     {
-        $request->validate([
-            'entity_type' => 'required|in:product,category,brand',
-            'entity_id' => 'required|integer',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:500',
-            'meta_keywords' => 'nullable|string|max:500',
-            'slug' => 'nullable|string|max:255',
-        ]);
+        try {
+            $request->validate([
+                'entity_type' => 'required|string|in:product,category,brand',
+                'entity_id' => 'nullable|integer',
+                'name' => 'nullable|string|max:255',
+                'description' => 'nullable|string',
+                'slug' => 'nullable|string|max:255',
+                'meta_title' => 'nullable|string|max:255',
+                'meta_description' => 'nullable|string|max:500',
+                'meta_keywords' => 'nullable|string|max:500',
+                'focus_keyword' => 'nullable|string|max:100',
+            ]);
 
-        $entity = $this->getEntity($request->entity_type, $request->entity_id);
-        
-        if (!$entity) {
+            // Get entity if ID provided, otherwise create a mock entity for preview
+            $entity = null;
+            if ($request->entity_id) {
+                $entity = $this->getEntity($request->entity_type, $request->entity_id);
+                if (!$entity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Varlık bulunamadı'
+                    ], 404);
+                }
+            } else {
+                // Create mock entity for new items
+                $entity = $this->createMockEntity($request->entity_type, $request->all());
+            }
+
+            // Use provided data for preview (don't save to database)
+            $previewData = [
+                'name' => $request->name,
+                'description' => $request->description,
+                'meta_title' => $request->meta_title,
+                'meta_description' => $request->meta_description,
+                'meta_keywords' => $request->meta_keywords,
+                'slug' => $request->slug,
+                'focus_keyword' => $request->focus_keyword,
+            ];
+
+            // Generate preview with enhanced analysis
+            $preview = $this->seoService->generatePreview($entity, $previewData);
+            $analysis = $this->seoService->performSEOAnalysis($entity, $previewData);
+            
+            // Enhanced analysis with focus keyword
+            if ($request->focus_keyword) {
+                $analysis = $this->enhanceAnalysisWithFocusKeyword($analysis, $previewData, $request->focus_keyword);
+            }
+
+            // Generate Google-like preview card
+            $previewCard = $this->generatePreviewCard($entity, $previewData);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'title' => $previewCard['title'],
+                    'description' => $previewCard['description'],
+                    'url' => $previewCard['url'],
+                    'analysis' => [
+                        'overall_score' => $analysis['overall_score'],
+                        'title' => $analysis['title'],
+                        'description' => $analysis['description'],
+                        'url' => $analysis['url'],
+                        'keywords' => $analysis['keywords'],
+                        'technical' => $analysis['technical'],
+                        'focus_keyword' => $analysis['focus_keyword'] ?? null,
+                    ]
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Entity not found'
-            ], 404);
+                'message' => 'Doğrulama hatası',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('SEO Preview Error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'SEO önizleme oluşturulurken bir hata oluştu'
+            ], 500);
         }
-
-        // Use provided data for preview (don't save to database)
-        $previewData = [
-            'meta_title' => $request->meta_title,
-            'meta_description' => $request->meta_description,
-            'meta_keywords' => $request->meta_keywords,
-            'slug' => $request->slug,
-        ];
-
-        $preview = $this->seoService->generatePreview($entity, $previewData);
-
-        return response()->json([
-            'success' => true,
-            'preview' => $preview
-        ]);
     }
 
     /**
@@ -288,6 +343,119 @@ class SEOController extends Controller
             default:
                 return null;
         }
+    }
+
+    /**
+     * Create a mock entity for preview when no ID is provided
+     */
+    private function createMockEntity(string $type, array $data)
+    {
+        $className = 'App\\Models\\' . ucfirst($type);
+        $entity = new $className();
+        
+        // Set basic properties
+        $entity->name = $data['name'] ?? 'Örnek ' . ucfirst($type);
+        $entity->slug = $data['slug'] ?? \Str::slug($entity->name);
+        $entity->description = $data['description'] ?? '';
+        $entity->meta_title = $data['meta_title'] ?? '';
+        $entity->meta_description = $data['meta_description'] ?? '';
+        $entity->meta_keywords = $data['meta_keywords'] ?? '';
+        
+        // Set type-specific properties
+        switch ($type) {
+            case 'product':
+                $entity->sku = 'PREVIEW-SKU';
+                $entity->price = 0;
+                $entity->is_active = true;
+                break;
+            case 'category':
+                $entity->parent_id = null;
+                $entity->is_active = true;
+                break;
+            case 'brand':
+                $entity->is_active = true;
+                break;
+        }
+        
+        return $entity;
+    }
+
+    /**
+     * Generate Google-like preview card
+     */
+    private function generatePreviewCard($entity, array $data): array
+    {
+        $title = $data['meta_title'] ?: $this->seoService->generateTitle($entity, $data);
+        $description = $data['meta_description'] ?: $this->seoService->generateDescription($entity, $data);
+        $url = $this->seoService->generateCanonicalUrl($entity);
+        
+        // Truncate for Google display
+        $displayTitle = strlen($title) > 60 ? substr($title, 0, 57) . '...' : $title;
+        $displayDescription = strlen($description) > 160 ? substr($description, 0, 157) . '...' : $description;
+        
+        return [
+            'title' => $displayTitle,
+            'description' => $displayDescription,
+            'url' => $url,
+            'display_url' => parse_url($url, PHP_URL_HOST) . parse_url($url, PHP_URL_PATH),
+        ];
+    }
+
+    /**
+     * Enhance analysis with focus keyword insights
+     */
+    private function enhanceAnalysisWithFocusKeyword(array $analysis, array $data, string $focusKeyword): array
+    {
+        $title = $data['meta_title'] ?? '';
+        $description = $data['meta_description'] ?? '';
+        $content = $data['description'] ?? '';
+        
+        $focusKeywordLower = strtolower(trim($focusKeyword));
+        
+        // Check keyword presence
+        $inTitle = stripos($title, $focusKeywordLower) !== false;
+        $inDescription = stripos($description, $focusKeywordLower) !== false;
+        $inContent = stripos($content, $focusKeywordLower) !== false;
+        
+        // Calculate keyword density in content
+        $wordCount = str_word_count($content);
+        $keywordCount = substr_count(strtolower($content), $focusKeywordLower);
+        $density = $wordCount > 0 ? round(($keywordCount / $wordCount) * 100, 2) : 0;
+        
+        // Determine focus keyword score
+        $focusScore = 0;
+        if ($inTitle) $focusScore += 30;
+        if ($inDescription) $focusScore += 25;
+        if ($inContent && $density >= 0.5 && $density <= 2.5) $focusScore += 25;
+        if ($keywordCount >= 1) $focusScore += 20;
+        
+        $recommendations = [];
+        if (!$inTitle) $recommendations[] = 'Ana anahtar kelimeyi başlığa ekleyin';
+        if (!$inDescription) $recommendations[] = 'Ana anahtar kelimeyi açıklamaya ekleyin';
+        if ($density < 0.5) $recommendations[] = 'Anahtar kelime yoğunluğunu artırın (%0.5-2.5 önerilir)';
+        if ($density > 2.5) $recommendations[] = 'Anahtar kelime yoğunluğunu azaltın (fazla kullanım)';
+        
+        $analysis['focus_keyword'] = [
+            'keyword' => $focusKeyword,
+            'in_title' => $inTitle,
+            'in_description' => $inDescription,
+            'in_content' => $inContent,
+            'density' => $density,
+            'count' => $keywordCount,
+            'score' => $focusScore,
+            'optimal' => $focusScore >= 75,
+            'status' => $focusScore >= 75 ? 'good' : ($focusScore >= 50 ? 'warning' : 'error'),
+            'recommendations' => $recommendations,
+        ];
+        
+        // Adjust overall score based on focus keyword
+        if (isset($analysis['overall_score'])) {
+            $focusWeight = 0.2; // 20% weight for focus keyword
+            $adjustedScore = ($analysis['overall_score'] * 0.8) + ($focusScore * $focusWeight);
+            $analysis['overall_score'] = min(100, round($adjustedScore));
+        }
+        
+        return $analysis;
     }
 
     private function calculateKeywordDensity(string $content, array $keywords): array
