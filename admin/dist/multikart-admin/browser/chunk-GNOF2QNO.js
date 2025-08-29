@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var o=[{path:"",loadComponent:()=>import("./chunk-QVIKSBFA.js").then(e=>e.Coupon)},{path:"create",loadComponent:()=>import("./chunk-JAXDHOJG.js").then(e=>e.CreateCoupon)},{path:"edit/:id",loadComponent:()=>import("./chunk-ABPY3HG2.js").then(e=>e.EditCoupon)}];export{o as couponRoutes};

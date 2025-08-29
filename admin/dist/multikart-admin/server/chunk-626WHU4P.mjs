@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var o=[{path:"",loadComponent:()=>import("./chunk-LUKKDRU7.mjs").then(e=>e.Coupon),\u0275entryName:"src/app/components/coupon/coupon.ts"},{path:"create",loadComponent:()=>import("./chunk-7SBJSQ3T.mjs").then(e=>e.CreateCoupon),\u0275entryName:"src/app/components/coupon/create-coupon/create-coupon.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-5RVJL2B3.mjs").then(e=>e.EditCoupon),\u0275entryName:"src/app/components/coupon/edit-coupon/edit-coupon.ts"}];export{o as couponRoutes};

@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var o=[{path:"",loadComponent:()=>import("./chunk-2IBUSPT3.js").then(e=>e.Role)},{path:"create",loadComponent:()=>import("./chunk-6EMWDTJK.js").then(e=>e.CreateRole)},{path:"edit/:id",loadComponent:()=>import("./chunk-TG6PZEXS.js").then(e=>e.EditRole)}];export{o as roleRoutes};

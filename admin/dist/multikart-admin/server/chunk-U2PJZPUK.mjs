@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var r=[{path:"",loadComponent:()=>import("./chunk-F3UQFBVT.mjs").then(e=>e.User),\u0275entryName:"src/app/components/user/user.ts"},{path:"create",loadComponent:()=>import("./chunk-CMHVG46C.mjs").then(e=>e.CreateUser),\u0275entryName:"src/app/components/user/create-user/create-user.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-WZNM4LEB.mjs").then(e=>e.EditUser),\u0275entryName:"src/app/components/user/edit-user/edit-user.ts"}];export{r as userRoutes};

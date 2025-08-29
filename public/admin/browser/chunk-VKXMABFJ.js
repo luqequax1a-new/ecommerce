@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var n=[{path:"",loadComponent:()=>import("./chunk-ZGYLH56M.js").then(e=>e.Brand)},{path:"create",loadComponent:()=>import("./chunk-H2YVBFID.js").then(e=>e.CreateBrand)},{path:"edit/:id",loadComponent:()=>import("./chunk-MEVMJLWS.js").then(e=>e.EditBrand)}];export{n as brandRoutes};

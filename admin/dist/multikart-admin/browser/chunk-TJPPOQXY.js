@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var n=[{path:"",loadComponent:()=>import("./chunk-LFL5U63R.js").then(e=>e.LicenseKey)},{path:"create",loadComponent:()=>import("./chunk-W7YPO3GX.js").then(e=>e.CreateLicenseKey)},{path:"edit/:id",loadComponent:()=>import("./chunk-HOH6BQ3J.js").then(e=>e.EditLicenseKey)}];export{n as licenseKeyRoutes};

@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var t=[{path:"",loadComponent:()=>import("./chunk-NUU3FFKH.js").then(e=>e.Notice)},{path:"create",loadComponent:()=>import("./chunk-7P6FBXJA.js").then(e=>e.CreateNotice)},{path:"edit/:id",loadComponent:()=>import("./chunk-6YJXE2L3.js").then(e=>e.EditNotice)}];export{t as noticeRoutes};

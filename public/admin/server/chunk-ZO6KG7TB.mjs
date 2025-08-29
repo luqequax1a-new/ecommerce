@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var t=[{path:"",loadComponent:()=>import("./chunk-PKK76JQW.mjs").then(e=>e.Stores),\u0275entryName:"src/app/components/store/stores.ts"},{path:"create",loadComponent:()=>import("./chunk-YFCJG4B2.mjs").then(e=>e.CreateStore),\u0275entryName:"src/app/components/store/create-store/create-store.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-HAATJ6O6.mjs").then(e=>e.EditStore),\u0275entryName:"src/app/components/store/edit-store/edit-store.ts"}];export{t as storeRoutes};

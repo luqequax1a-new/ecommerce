@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var r=[{path:"",loadComponent:()=>import("./chunk-4PVHR7YC.js").then(e=>e.User)},{path:"create",loadComponent:()=>import("./chunk-OISUFMNQ.js").then(e=>e.CreateUser)},{path:"edit/:id",loadComponent:()=>import("./chunk-T7MXS5OB.js").then(e=>e.EditUser)}];export{r as userRoutes};

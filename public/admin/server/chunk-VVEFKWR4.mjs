@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import{a as i}from"./chunk-L5L756F6.mjs";import{Ub as r,Xb as n,cd as c,rb as p}from"./chunk-GYKPLZNJ.mjs";var u=(()=>{let e=class e{constructor(){this.categoryType=c("product")}};e.\u0275fac=function(t){return new(t||e)},e.\u0275cmp=p({type:e,selectors:[["app-edit-category"]],inputs:{categoryType:[1,"categoryType"]},decls:1,vars:2,consts:[[3,"type","categoryType"]],template:function(t,y){t&1&&n(0,"app-category",0),t&2&&r("type","edit")("categoryType",y.categoryType())},dependencies:[i],encapsulation:2});let o=e;return o})();export{u as a};

@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var t=[{path:"",loadComponent:()=>import("./chunk-BXQY6NAS.mjs").then(e=>e.Category),\u0275entryName:"src/app/components/category/category.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-5VHL65FM.mjs").then(e=>e.EditCategory),\u0275entryName:"src/app/components/category/edit-category/edit-category.ts"}];export{t as categoryRoutes};

@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var o=[{path:"",loadComponent:()=>import("./chunk-46KFU3KM.mjs").then(e=>e.Role),\u0275entryName:"src/app/components/role/role.ts"},{path:"create",loadComponent:()=>import("./chunk-4JNLGXNN.mjs").then(e=>e.CreateRole),\u0275entryName:"src/app/components/role/create-role/create-role.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-HSHCNNTO.mjs").then(e=>e.EditRole),\u0275entryName:"src/app/components/role/edit-role/edit-role.ts"}];export{o as roleRoutes};

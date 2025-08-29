@@ -1,0 +1,1 @@
+import"./chunk-4CLCTAJ7.js";var t=[{path:"",loadComponent:()=>import("./chunk-VSC5IXSJ.js").then(e=>e.Product)},{path:"create",loadComponent:()=>import("./chunk-PPH44LXW.js").then(e=>e.CreateProduct)},{path:"edit/:id",loadComponent:()=>import("./chunk-PJ7BD4FR.js").then(e=>e.EditProduct)}];export{t as productRoutes};

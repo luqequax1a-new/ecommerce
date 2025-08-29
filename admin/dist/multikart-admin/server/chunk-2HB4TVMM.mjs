@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var r=[{path:"",loadComponent:()=>import("./chunk-KF6EIRJR.mjs").then(e=>e.Currency),\u0275entryName:"src/app/components/currency/currency.ts"},{path:"create",loadComponent:()=>import("./chunk-73AUTLNI.mjs").then(e=>e.CreateCurrency),\u0275entryName:"src/app/components/currency/create-currency/create-currency.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-RMDOYAMP.mjs").then(e=>e.EditCurrency),\u0275entryName:"src/app/components/currency/edit-currency/edit-currency.ts"}];export{r as currencyRoutes};

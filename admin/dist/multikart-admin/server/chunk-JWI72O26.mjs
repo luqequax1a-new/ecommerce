@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var t=[{path:"",loadComponent:()=>import("./chunk-GJ6MWUTT.mjs").then(e=>e.Faq),\u0275entryName:"src/app/components/faq/faq.ts"},{path:"create",loadComponent:()=>import("./chunk-RAVPZ6TJ.mjs").then(e=>e.CreateFaq),\u0275entryName:"src/app/components/faq/create-faq/create-faq.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-DWFLXM3Z.mjs").then(e=>e.EditFaq),\u0275entryName:"src/app/components/faq/edit-faq/edit-faq.ts"}];export{t as faqRoutes};

@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var t=[{path:"",loadComponent:()=>import("./chunk-TUENQIGE.mjs").then(e=>e.Tax),\u0275entryName:"src/app/components/tax/tax.ts"},{path:"create",loadComponent:()=>import("./chunk-LGL2BYKE.mjs").then(e=>e.CreateTax),\u0275entryName:"src/app/components/tax/create-tax/create-tax.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-PNMRSVCX.mjs").then(e=>e.EditTax),\u0275entryName:"src/app/components/tax/edit-tax/edit-tax.ts"}];export{t as taxRoutes};

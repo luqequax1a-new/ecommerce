@@ -1,0 +1,2 @@
+import './polyfills.server.mjs';
+import"./chunk-S6KH3LOX.mjs";var e=[{path:"",loadComponent:()=>import("./chunk-MDXZ2JGJ.mjs").then(n=>n.Shipping),\u0275entryName:"src/app/components/shipping/shipping.ts"},{path:"edit/:id",loadComponent:()=>import("./chunk-UAADNYP3.mjs").then(n=>n.ShippingCountry),\u0275entryName:"src/app/components/shipping/shipping-country/shipping-country.ts"}];export{e as shippingRoutes};

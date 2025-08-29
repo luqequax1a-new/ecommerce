@@ -1,0 +1,66 @@
+# Laravel specific
+/vendor/
+/node_modules/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/logs/*.log
+/.env
+/.env.backup
+/.phpunit.result.cache
+/Homestead.json
+/Homestead.yaml
+/npm-debug.log
+/yarn-error.log
+
+# Laravel Mix / Vite
+/public/css
+/public/js
+/public/build
+
+# IDE
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Shared Hosting specific
+/public_html/
+*.cpanel
+.htaccess.backup
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Production assets (will be built during deployment)
+/public/build/
+
+# Shared hosting deployment artifacts
+/shared_hosting_upload/
+/cpanel_backup/
